@@ -1,0 +1,147 @@
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
+
+@theme inline {
+  /* ── 温暖人文配色 ── */
+  --color-primary: #8B6F47;
+  --color-primary-light: #A68B5B;
+  --color-primary-dark: #6B5535;
+  --color-secondary: #D4A574;
+  --color-secondary-light: #E0BC92;
+  --color-accent: #E8D5B7;
+  --color-accent-light: #F0E4D0;
+
+  --color-bg: #FFF8F0;
+  --color-surface: #FFFFFF;
+  --color-surface-hover: #FFFAF5;
+
+  --color-text-primary: #3D2B1F;
+  --color-text-secondary: #7A6652;
+  --color-text-muted: #A69882;
+  --color-text-inverse: #FFFFFF;
+
+  --color-border: #E8DFD4;
+  --color-border-light: #F0EAE2;
+
+  --color-success: #6B8F71;
+  --color-warning: #D4A574;
+  --color-error: #C45C5C;
+  --color-info: #4A90D9;
+
+  /* ── 板块颜色 ── */
+  --color-cat-ai: #4A90D9;
+  --color-cat-art: #9B59B6;
+  --color-cat-health: #2ECC71;
+  --color-cat-law: #E74C3C;
+  --color-cat-hiking: #F39C12;
+  --color-cat-running: #E67E22;
+  --color-cat-hr: #3498DB;
+  --color-cat-king: #E91E63;
+  --color-cat-habit: #00BCD4;
+
+  /* ── 字体 ── */
+  --font-serif: "Noto Serif SC", "Source Han Serif SC", "STSong", serif;
+  --font-sans: "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+
+  /* ── 圆角 ── */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  /* ── 阴影 ── */
+  --shadow-card: 0 2px 8px rgba(139, 111, 71, 0.06), 0 1px 3px rgba(139, 111, 71, 0.04);
+  --shadow-card-hover: 0 4px 16px rgba(139, 111, 71, 0.1), 0 2px 6px rgba(139, 111, 71, 0.06);
+  --shadow-float: 0 8px 32px rgba(139, 111, 71, 0.12), 0 4px 12px rgba(139, 111, 71, 0.08);
+}
+
+/* ── Base styles ── */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Typography ── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif);
+  color: var(--color-text-primary);
+  line-height: 1.3;
+}
+
+/* ── Selection ── */
+::selection {
+  background-color: var(--color-accent);
+  color: var(--color-text-primary);
+}
+
+/* ── Scrollbar (subtle warm styling) ── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-secondary);
+}
+
+/* ── Utility classes ── */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-1px);
+}
+
+.gradient-warm {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+}
+
+.gradient-accent {
+  background: linear-gradient(135deg, var(--color-accent-light) 0%, var(--color-accent) 100%);
+}
+
+/* ── Focus styles ── */
+*:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Prose content ── */
+.prose-warm p {
+  margin-bottom: 1em;
+  line-height: 1.8;
+}
+
+.prose-warm a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.prose-warm a:hover {
+  color: var(--color-primary-dark);
+}
