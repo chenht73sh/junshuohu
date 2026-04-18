@@ -14,26 +14,25 @@ export async function GET(
       return NextResponse.json({ error: "无效的公告ID" }, { status: 400 });
     }
 
-    const db = initializeDatabase();
+    const db = await initializeDatabase();
 
-    const announcement = db
-      .prepare(
-        `SELECT a.*,
-          u.display_name as author_name,
-          c.name as category_name,
-          c.color as category_color
-        FROM announcements a
-        JOIN users u ON a.author_id = u.id
-        LEFT JOIN categories c ON a.category_id = c.id
-        WHERE a.id = ?`
-      )
-      .get(announcementId);
+    const result = await db.execute({
+      sql: `SELECT a.*,
+        u.display_name as author_name,
+        c.name as category_name,
+        c.color as category_color
+      FROM announcements a
+      JOIN users u ON a.author_id = u.id
+      LEFT JOIN categories c ON a.category_id = c.id
+      WHERE a.id = ?`,
+      args: [announcementId],
+    });
 
-    if (!announcement) {
+    if (result.rows.length === 0) {
       return NextResponse.json({ error: "公告不存在" }, { status: 404 });
     }
 
-    return NextResponse.json({ announcement });
+    return NextResponse.json({ announcement: result.rows[0] });
   } catch (error) {
     console.error("Failed to fetch announcement:", error);
     return NextResponse.json(

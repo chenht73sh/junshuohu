@@ -6,18 +6,17 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const db = initializeDatabase();
+    const db = await initializeDatabase();
 
-    const courses = db
-      .prepare(
-        `SELECT co.*, c.name as category_name, c.color as category_color
-         FROM courses co
-         JOIN categories c ON co.category_id = c.id
-         ORDER BY co.start_time ASC`
-      )
-      .all();
+    const result = await db.execute({
+      sql: `SELECT co.*, c.name as category_name, c.color as category_color
+            FROM courses co
+            JOIN categories c ON co.category_id = c.id
+            ORDER BY co.start_time ASC`,
+      args: [],
+    });
 
-    return NextResponse.json({ courses });
+    return NextResponse.json({ courses: result.rows });
   } catch (error) {
     console.error("Failed to fetch courses:", error);
     return NextResponse.json(
@@ -70,33 +69,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = initializeDatabase();
+    const db = await initializeDatabase();
 
-    const result = db
-      .prepare(
-        `INSERT INTO courses (title, description, category_id, instructor, start_time, location, max_participants)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`
-      )
-      .run(
+    const result = await db.execute({
+      sql: `INSERT INTO courses (title, description, category_id, instructor, start_time, location, max_participants)
+            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      args: [
         title,
         description || null,
         category_id,
         instructor,
         start_time || null,
         location || null,
-        max_participants || null
-      );
+        max_participants || null,
+      ],
+    });
 
-    const course = db
-      .prepare(
-        `SELECT co.*, c.name as category_name, c.color as category_color
-         FROM courses co
-         JOIN categories c ON co.category_id = c.id
-         WHERE co.id = ?`
-      )
-      .get(result.lastInsertRowid);
+    const courseResult = await db.execute({
+      sql: `SELECT co.*, c.name as category_name, c.color as category_color
+            FROM courses co
+            JOIN categories c ON co.category_id = c.id
+            WHERE co.id = ?`,
+      args: [result.lastInsertRowid!],
+    });
 
-    return NextResponse.json({ course }, { status: 201 });
+    return NextResponse.json({ course: courseResult.rows[0] }, { status: 201 });
   } catch (error) {
     console.error("Failed to create course:", error);
     return NextResponse.json(

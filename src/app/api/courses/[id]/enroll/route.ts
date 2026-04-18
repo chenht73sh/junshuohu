@@ -38,63 +38,56 @@ export async function POST(
       );
     }
 
-    const db = initializeDatabase();
+    const db = await initializeDatabase();
 
-    // Use transaction for atomicity
-    const enrollTransaction = db.transaction(() => {
-      // Check course exists and is open
-      const course = db
-        .prepare("SELECT id, title, max_participants, current_participants, status FROM courses WHERE id = ?")
-        .get(courseId) as CourseRow | undefined;
-
-      if (!course) {
-        return { error: "课程不存在", status: 404 };
-      }
-
-      if (course.status !== "open") {
-        return { error: "课程报名已关闭", status: 400 };
-      }
-
-      // Check if already enrolled
-      const existing = db
-        .prepare("SELECT id FROM enrollments WHERE course_id = ? AND user_id = ?")
-        .get(courseId, payload.userId);
-
-      if (existing) {
-        return { error: "您已报名该课程", status: 409 };
-      }
-
-      // Check capacity
-      if (
-        course.max_participants !== null &&
-        course.current_participants >= course.max_participants
-      ) {
-        return { error: "课程已满员", status: 400 };
-      }
-
-      // Insert enrollment and update count
-      db.prepare(
-        "INSERT INTO enrollments (course_id, user_id) VALUES (?, ?)"
-      ).run(courseId, payload.userId);
-
-      db.prepare(
-        "UPDATE courses SET current_participants = current_participants + 1 WHERE id = ?"
-      ).run(courseId);
-
-      return { success: true, courseTitle: course.title };
+    // Check course exists and is open
+    const courseResult = await db.execute({
+      sql: "SELECT id, title, max_participants, current_participants, status FROM courses WHERE id = ?",
+      args: [courseId],
     });
 
-    const result = enrollTransaction();
-
-    if ("error" in result) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: result.status }
-      );
+    if (courseResult.rows.length === 0) {
+      return NextResponse.json({ error: "课程不存在" }, { status: 404 });
     }
 
+    const course = courseResult.rows[0] as unknown as CourseRow;
+
+    if (course.status !== "open") {
+      return NextResponse.json({ error: "课程报名已关闭" }, { status: 400 });
+    }
+
+    // Check if already enrolled
+    const existingResult = await db.execute({
+      sql: "SELECT id FROM enrollments WHERE course_id = ? AND user_id = ?",
+      args: [courseId, payload.userId],
+    });
+
+    if (existingResult.rows.length > 0) {
+      return NextResponse.json({ error: "您已报名该课程" }, { status: 409 });
+    }
+
+    // Check capacity
+    if (
+      course.max_participants !== null &&
+      course.current_participants >= course.max_participants
+    ) {
+      return NextResponse.json({ error: "课程已满员" }, { status: 400 });
+    }
+
+    // Insert enrollment and update count
+    await db.batch([
+      {
+        sql: "INSERT INTO enrollments (course_id, user_id) VALUES (?, ?)",
+        args: [courseId, payload.userId],
+      },
+      {
+        sql: "UPDATE courses SET current_participants = current_participants + 1 WHERE id = ?",
+        args: [courseId],
+      },
+    ], "write");
+
     return NextResponse.json(
-      { message: `成功报名「${result.courseTitle}」`, enrolled: true },
+      { message: `成功报名「${course.title}」`, enrolled: true },
       { status: 201 }
     );
   } catch (error) {

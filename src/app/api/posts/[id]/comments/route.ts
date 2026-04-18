@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { initializeDatabase } from "@/lib/db";
 import { verifyToken } from "@/lib/auth";
+import { addPoints } from "@/lib/points";
 
 export const dynamic = "force-dynamic";
 
@@ -15,22 +16,21 @@ export async function GET(
       return NextResponse.json({ error: "无效的帖子ID" }, { status: 400 });
     }
 
-    const db = initializeDatabase();
+    const db = await initializeDatabase();
 
-    const comments = db
-      .prepare(
-        `SELECT cm.*, 
-          u.display_name as author_name,
-          u.avatar_url as author_avatar,
-          u.role as author_role
-        FROM comments cm
-        JOIN users u ON cm.author_id = u.id
-        WHERE cm.post_id = ?
-        ORDER BY cm.created_at ASC`
-      )
-      .all(postId);
+    const result = await db.execute({
+      sql: `SELECT cm.*, 
+        u.display_name as author_name,
+        u.avatar_url as author_avatar,
+        u.role as author_role
+      FROM comments cm
+      JOIN users u ON cm.author_id = u.id
+      WHERE cm.post_id = ?
+      ORDER BY cm.created_at ASC`,
+      args: [postId],
+    });
 
-    return NextResponse.json({ comments });
+    return NextResponse.json({ comments: result.rows });
   } catch (error) {
     console.error("Failed to fetch comments:", error);
     return NextResponse.json(
@@ -74,29 +74,33 @@ export async function POST(
       return NextResponse.json({ error: "评论不能超过2000个字符" }, { status: 400 });
     }
 
-    const db = initializeDatabase();
+    const db = await initializeDatabase();
 
     // Check post exists
-    const post = db.prepare("SELECT id FROM posts WHERE id = ?").get(postId);
-    if (!post) {
+    const postResult = await db.execute({
+      sql: "SELECT id FROM posts WHERE id = ?",
+      args: [postId],
+    });
+    if (postResult.rows.length === 0) {
       return NextResponse.json({ error: "帖子不存在" }, { status: 404 });
     }
 
-    const result = db
-      .prepare(
-        `INSERT INTO comments (content, author_id, post_id, parent_id) VALUES (?, ?, ?, ?)`
-      )
-      .run(content, payload.userId, postId, parent_id || null);
+    const result = await db.execute({
+      sql: `INSERT INTO comments (content, author_id, post_id, parent_id) VALUES (?, ?, ?, ?)`,
+      args: [content, payload.userId, postId, parent_id || null],
+    });
 
-    const comment = db
-      .prepare(
-        `SELECT cm.*, u.display_name as author_name, u.avatar_url as author_avatar, u.role as author_role
-        FROM comments cm JOIN users u ON cm.author_id = u.id
-        WHERE cm.id = ?`
-      )
-      .get(result.lastInsertRowid);
+    const commentResult = await db.execute({
+      sql: `SELECT cm.*, u.display_name as author_name, u.avatar_url as author_avatar, u.role as author_role
+      FROM comments cm JOIN users u ON cm.author_id = u.id
+      WHERE cm.id = ?`,
+      args: [result.lastInsertRowid!],
+    });
 
-    return NextResponse.json({ comment }, { status: 201 });
+    // Award points for commenting
+    await addPoints(payload.userId, 2, "comment", `评论帖子`, Number(result.lastInsertRowid), "comment");
+
+    return NextResponse.json({ comment: commentResult.rows[0] }, { status: 201 });
   } catch (error) {
     console.error("Failed to create comment:", error);
     return NextResponse.json(

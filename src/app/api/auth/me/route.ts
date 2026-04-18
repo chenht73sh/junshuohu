@@ -20,20 +20,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const db = initializeDatabase();
+    const db = await initializeDatabase();
 
-    const user = db
-      .prepare(
-        `SELECT id, username, email, display_name, avatar_url, role, bio, created_at
-         FROM users WHERE id = ?`
-      )
-      .get(payload.userId);
+    const result = await db.execute({
+      sql: `SELECT id, username, email, display_name, avatar_url, role, bio, created_at
+            FROM users WHERE id = ?`,
+      args: [payload.userId],
+    });
 
-    if (!user) {
+    if (result.rows.length === 0) {
       return NextResponse.json({ error: "用户不存在" }, { status: 404 });
     }
 
-    return NextResponse.json({ user });
+    return NextResponse.json({ user: result.rows[0] });
   } catch (error) {
     console.error("Failed to get current user:", error);
     return NextResponse.json(

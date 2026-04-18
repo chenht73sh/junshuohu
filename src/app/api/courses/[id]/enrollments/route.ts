@@ -14,28 +14,28 @@ export async function GET(
       return NextResponse.json({ error: "无效的课程ID" }, { status: 400 });
     }
 
-    const db = initializeDatabase();
+    const db = await initializeDatabase();
 
     // Check course exists
-    const course = db
-      .prepare("SELECT id FROM courses WHERE id = ?")
-      .get(courseId);
-    if (!course) {
+    const courseResult = await db.execute({
+      sql: "SELECT id FROM courses WHERE id = ?",
+      args: [courseId],
+    });
+    if (courseResult.rows.length === 0) {
       return NextResponse.json({ error: "课程不存在" }, { status: 404 });
     }
 
-    const enrollments = db
-      .prepare(
-        `SELECT e.id, e.created_at,
-          u.id as user_id, u.display_name, u.avatar_url
-         FROM enrollments e
-         JOIN users u ON e.user_id = u.id
-         WHERE e.course_id = ?
-         ORDER BY e.created_at ASC`
-      )
-      .all(courseId);
+    const result = await db.execute({
+      sql: `SELECT e.id, e.created_at,
+        u.id as user_id, u.display_name, u.avatar_url
+       FROM enrollments e
+       JOIN users u ON e.user_id = u.id
+       WHERE e.course_id = ?
+       ORDER BY e.created_at ASC`,
+      args: [courseId],
+    });
 
-    return NextResponse.json({ enrollments });
+    return NextResponse.json({ enrollments: result.rows });
   } catch (error) {
     console.error("Failed to fetch enrollments:", error);
     return NextResponse.json(

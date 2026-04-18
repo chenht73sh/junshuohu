@@ -18,10 +18,13 @@ export async function PATCH(
       return NextResponse.json({ error: "无效的公告ID" }, { status: 400 });
     }
 
-    const db = initializeDatabase();
+    const db = await initializeDatabase();
 
-    const existing = db.prepare("SELECT id FROM announcements WHERE id = ?").get(announcementId);
-    if (!existing) {
+    const existingResult = await db.execute({
+      sql: "SELECT id FROM announcements WHERE id = ?",
+      args: [announcementId],
+    });
+    if (existingResult.rows.length === 0) {
       return NextResponse.json({ error: "公告不存在" }, { status: 404 });
     }
 
@@ -61,21 +64,21 @@ export async function PATCH(
     updates.push("updated_at = datetime('now')");
     values.push(announcementId);
 
-    db.prepare(
-      `UPDATE announcements SET ${updates.join(", ")} WHERE id = ?`
-    ).run(...values);
+    await db.execute({
+      sql: `UPDATE announcements SET ${updates.join(", ")} WHERE id = ?`,
+      args: values,
+    });
 
-    const announcement = db
-      .prepare(
-        `SELECT a.*, u.display_name as author_name, c.name as category_name, c.color as category_color
-         FROM announcements a
-         JOIN users u ON a.author_id = u.id
-         LEFT JOIN categories c ON a.category_id = c.id
-         WHERE a.id = ?`
-      )
-      .get(announcementId);
+    const annResult = await db.execute({
+      sql: `SELECT a.*, u.display_name as author_name, c.name as category_name, c.color as category_color
+            FROM announcements a
+            JOIN users u ON a.author_id = u.id
+            LEFT JOIN categories c ON a.category_id = c.id
+            WHERE a.id = ?`,
+      args: [announcementId],
+    });
 
-    return NextResponse.json({ announcement });
+    return NextResponse.json({ announcement: annResult.rows[0] });
   } catch (error) {
     console.error("Failed to update announcement:", error);
     return NextResponse.json(
@@ -99,14 +102,20 @@ export async function DELETE(
       return NextResponse.json({ error: "无效的公告ID" }, { status: 400 });
     }
 
-    const db = initializeDatabase();
+    const db = await initializeDatabase();
 
-    const existing = db.prepare("SELECT id FROM announcements WHERE id = ?").get(announcementId);
-    if (!existing) {
+    const existingResult = await db.execute({
+      sql: "SELECT id FROM announcements WHERE id = ?",
+      args: [announcementId],
+    });
+    if (existingResult.rows.length === 0) {
       return NextResponse.json({ error: "公告不存在" }, { status: 404 });
     }
 
-    db.prepare("DELETE FROM announcements WHERE id = ?").run(announcementId);
+    await db.execute({
+      sql: "DELETE FROM announcements WHERE id = ?",
+      args: [announcementId],
+    });
 
     return NextResponse.json({ message: "公告已删除" });
   } catch (error) {

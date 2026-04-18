@@ -10,22 +10,21 @@ export async function GET(request: NextRequest) {
     const authResult = requireModerator(request);
     if (authResult instanceof NextResponse) return authResult;
 
-    const db = initializeDatabase();
+    const db = await initializeDatabase();
 
-    const announcements = db
-      .prepare(
-        `SELECT a.*,
-          u.display_name as author_name,
-          c.name as category_name,
-          c.color as category_color
-        FROM announcements a
-        JOIN users u ON a.author_id = u.id
-        LEFT JOIN categories c ON a.category_id = c.id
-        ORDER BY a.is_pinned DESC, a.created_at DESC`
-      )
-      .all();
+    const result = await db.execute({
+      sql: `SELECT a.*,
+        u.display_name as author_name,
+        c.name as category_name,
+        c.color as category_color
+      FROM announcements a
+      JOIN users u ON a.author_id = u.id
+      LEFT JOIN categories c ON a.category_id = c.id
+      ORDER BY a.is_pinned DESC, a.created_at DESC`,
+      args: [],
+    });
 
-    return NextResponse.json({ announcements });
+    return NextResponse.json({ announcements: result.rows });
   } catch (error) {
     console.error("Failed to fetch announcements:", error);
     return NextResponse.json(
@@ -51,34 +50,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "内容不能为空" }, { status: 400 });
     }
 
-    const db = initializeDatabase();
+    const db = await initializeDatabase();
 
-    const result = db
-      .prepare(
-        `INSERT INTO announcements (title, content, image_url, category_id, author_id, is_pinned, expire_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`
-      )
-      .run(
+    const result = await db.execute({
+      sql: `INSERT INTO announcements (title, content, image_url, category_id, author_id, is_pinned, expire_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      args: [
         title.trim(),
         content.trim(),
         image_url || null,
         category_id || null,
         user.userId,
         is_pinned ? 1 : 0,
-        expire_at || null
-      );
+        expire_at || null,
+      ],
+    });
 
-    const announcement = db
-      .prepare(
-        `SELECT a.*, u.display_name as author_name, c.name as category_name, c.color as category_color
-         FROM announcements a
-         JOIN users u ON a.author_id = u.id
-         LEFT JOIN categories c ON a.category_id = c.id
-         WHERE a.id = ?`
-      )
-      .get(result.lastInsertRowid);
+    const annResult = await db.execute({
+      sql: `SELECT a.*, u.display_name as author_name, c.name as category_name, c.color as category_color
+            FROM announcements a
+            JOIN users u ON a.author_id = u.id
+            LEFT JOIN categories c ON a.category_id = c.id
+            WHERE a.id = ?`,
+      args: [result.lastInsertRowid!],
+    });
 
-    return NextResponse.json({ announcement }, { status: 201 });
+    return NextResponse.json({ announcement: annResult.rows[0] }, { status: 201 });
   } catch (error) {
     console.error("Failed to create announcement:", error);
     return NextResponse.json(

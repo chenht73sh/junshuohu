@@ -38,13 +38,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = initializeDatabase();
+    const db = await initializeDatabase();
 
     // Check username uniqueness
-    const existingUsername = db
-      .prepare("SELECT id FROM users WHERE username = ?")
-      .get(username);
-    if (existingUsername) {
+    const existingUsername = await db.execute({
+      sql: "SELECT id FROM users WHERE username = ?",
+      args: [username],
+    });
+    if (existingUsername.rows.length > 0) {
       return NextResponse.json(
         { error: "用户名已被注册" },
         { status: 409 }
@@ -53,10 +54,11 @@ export async function POST(request: NextRequest) {
 
     // Check email uniqueness (if provided)
     if (email) {
-      const existingEmail = db
-        .prepare("SELECT id FROM users WHERE email = ?")
-        .get(email);
-      if (existingEmail) {
+      const existingEmail = await db.execute({
+        sql: "SELECT id FROM users WHERE email = ?",
+        args: [email],
+      });
+      if (existingEmail.rows.length > 0) {
         return NextResponse.json(
           { error: "邮箱已被注册" },
           { status: 409 }
@@ -67,19 +69,19 @@ export async function POST(request: NextRequest) {
     // Hash password and insert
     const passwordHash = hashPassword(password);
 
-    const result = db
-      .prepare(
-        `INSERT INTO users (username, email, password_hash, display_name, role)
-         VALUES (?, ?, ?, ?, 'member')`
-      )
-      .run(username, email || null, passwordHash, display_name);
+    const result = await db.execute({
+      sql: `INSERT INTO users (username, email, password_hash, display_name, role)
+            VALUES (?, ?, ?, ?, 'member')`,
+      args: [username, email || null, passwordHash, display_name],
+    });
 
-    const user = db
-      .prepare(
-        `SELECT id, username, email, display_name, avatar_url, role, bio, created_at
-         FROM users WHERE id = ?`
-      )
-      .get(result.lastInsertRowid) as {
+    const userResult = await db.execute({
+      sql: `SELECT id, username, email, display_name, avatar_url, role, bio, created_at
+            FROM users WHERE id = ?`,
+      args: [result.lastInsertRowid!],
+    });
+
+    const user = userResult.rows[0] as unknown as {
       id: number;
       username: string;
       email: string | null;

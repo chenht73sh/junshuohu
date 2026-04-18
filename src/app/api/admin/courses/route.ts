@@ -9,17 +9,16 @@ export async function GET(request: NextRequest) {
     const auth = requireModerator(request);
     if (auth instanceof NextResponse) return auth;
 
-    const db = initializeDatabase();
-    const courses = db
-      .prepare(
-        `SELECT co.*, c.name as category_name, c.color as category_color
-         FROM courses co
-         JOIN categories c ON co.category_id = c.id
-         ORDER BY co.created_at DESC`
-      )
-      .all();
+    const db = await initializeDatabase();
+    const result = await db.execute({
+      sql: `SELECT co.*, c.name as category_name, c.color as category_color
+            FROM courses co
+            JOIN categories c ON co.category_id = c.id
+            ORDER BY co.created_at DESC`,
+      args: [],
+    });
 
-    return NextResponse.json({ courses });
+    return NextResponse.json({ courses: result.rows });
   } catch (error) {
     console.error("Failed to fetch courses:", error);
     return NextResponse.json({ error: "获取课程列表失败" }, { status: 500 });
@@ -42,22 +41,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = initializeDatabase();
+    const db = await initializeDatabase();
 
-    const result = db
-      .prepare(
-        `INSERT INTO courses (title, description, category_id, instructor, start_time, location, max_participants)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`
-      )
-      .run(
+    const result = await db.execute({
+      sql: `INSERT INTO courses (title, description, category_id, instructor, start_time, location, max_participants)
+            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      args: [
         title.trim(),
         description?.trim() || null,
         category_id,
         instructor.trim(),
         start_time || null,
         location?.trim() || null,
-        max_participants || null
-      );
+        max_participants || null,
+      ],
+    });
 
     return NextResponse.json(
       { message: "课程已创建", courseId: result.lastInsertRowid },

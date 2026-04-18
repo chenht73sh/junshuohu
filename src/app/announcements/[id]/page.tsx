@@ -39,22 +39,22 @@ export default async function AnnouncementDetailPage({
   const announcementId = parseInt(id, 10);
   if (isNaN(announcementId)) notFound();
 
-  const db = initializeDatabase();
+  const db = await initializeDatabase();
 
-  const announcement = db
-    .prepare(
-      `SELECT a.*,
-        u.display_name as author_name,
-        c.name as category_name,
-        c.color as category_color
-      FROM announcements a
-      JOIN users u ON a.author_id = u.id
-      LEFT JOIN categories c ON a.category_id = c.id
-      WHERE a.id = ?`
-    )
-    .get(announcementId) as AnnouncementRow | undefined;
+  const result = await db.execute({
+    sql: `SELECT a.*,
+      u.display_name as author_name,
+      c.name as category_name,
+      c.color as category_color
+    FROM announcements a
+    JOIN users u ON a.author_id = u.id
+    LEFT JOIN categories c ON a.category_id = c.id
+    WHERE a.id = ?`,
+    args: [announcementId],
+  });
 
-  if (!announcement) notFound();
+  if (result.rows.length === 0) notFound();
+  const announcement = result.rows[0] as unknown as AnnouncementRow;
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-14">

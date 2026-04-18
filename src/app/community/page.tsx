@@ -12,17 +12,17 @@ interface CategoryRow {
   post_count: number;
 }
 
-export default function CommunityPage() {
-  const db = initializeDatabase();
+export default async function CommunityPage() {
+  const db = await initializeDatabase();
 
-  const categories = db
-    .prepare(
-      `SELECT c.*, 
-        (SELECT COUNT(*) FROM posts WHERE category_id = c.id) as post_count
-      FROM categories c
-      ORDER BY c.sort_order ASC`
-    )
-    .all() as CategoryRow[];
+  const result = await db.execute({
+    sql: `SELECT c.*, 
+      (SELECT COUNT(*) FROM posts WHERE category_id = c.id) as post_count
+    FROM categories c
+    ORDER BY c.sort_order ASC`,
+    args: [],
+  });
+  const categories = result.rows as unknown as CategoryRow[];
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-14">

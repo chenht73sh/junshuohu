@@ -19,17 +19,18 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const db = initializeDatabase();
+    const db = await initializeDatabase();
 
     const updates: string[] = [];
     const values: unknown[] = [];
 
     if (typeof body.name === "string" && body.name.trim()) {
       // Check for duplicate name (exclude current)
-      const existing = db
-        .prepare("SELECT id FROM categories WHERE name = ? AND id != ?")
-        .get(body.name.trim(), categoryId);
-      if (existing) {
+      const existingResult = await db.execute({
+        sql: "SELECT id FROM categories WHERE name = ? AND id != ?",
+        args: [body.name.trim(), categoryId],
+      });
+      if (existingResult.rows.length > 0) {
         return NextResponse.json({ error: "已存在同名板块" }, { status: 400 });
       }
       updates.push("name = ?");
@@ -62,11 +63,12 @@ export async function PATCH(
 
     values.push(categoryId);
 
-    const result = db
-      .prepare(`UPDATE categories SET ${updates.join(", ")} WHERE id = ?`)
-      .run(...values);
+    const result = await db.execute({
+      sql: `UPDATE categories SET ${updates.join(", ")} WHERE id = ?`,
+      args: values as (string | number | null)[],
+    });
 
-    if (result.changes === 0) {
+    if (result.rowsAffected === 0) {
       return NextResponse.json({ error: "板块不存在" }, { status: 404 });
     }
 
@@ -91,49 +93,48 @@ export async function DELETE(
       return NextResponse.json({ error: "无效的板块ID" }, { status: 400 });
     }
 
-    const db = initializeDatabase();
+    const db = await initializeDatabase();
 
     // Count posts in this category
-    const postCount = db
-      .prepare("SELECT COUNT(*) as cnt FROM posts WHERE category_id = ?")
-      .get(categoryId) as { cnt: number };
+    const postCountResult = await db.execute({
+      sql: "SELECT COUNT(*) as cnt FROM posts WHERE category_id = ?",
+      args: [categoryId],
+    });
+    const postCount = postCountResult.rows[0].cnt as number;
 
     // If client didn't confirm and there are posts, return warning
     const url = new URL(request.url);
     const confirmed = url.searchParams.get("confirmed") === "true";
 
-    if (postCount.cnt > 0 && !confirmed) {
+    if (postCount > 0 && !confirmed) {
       return NextResponse.json(
         {
           warning: true,
-          post_count: postCount.cnt,
-          message: `该板块下有 ${postCount.cnt} 篇帖子，删除板块将同时删除所有帖子和评论。`,
+          post_count: postCount,
+          message: `该板块下有 ${postCount} 篇帖子，删除板块将同时删除所有帖子和评论。`,
         },
         { status: 200 }
       );
     }
 
-    const deleteAll = db.transaction(() => {
+    await db.batch([
       // Delete comments on posts in this category
-      db.prepare(
-        "DELETE FROM comments WHERE post_id IN (SELECT id FROM posts WHERE category_id = ?)"
-      ).run(categoryId);
+      {
+        sql: "DELETE FROM comments WHERE post_id IN (SELECT id FROM posts WHERE category_id = ?)",
+        args: [categoryId],
+      },
+      // Delete enrollments for courses in this category
+      {
+        sql: "DELETE FROM enrollments WHERE course_id IN (SELECT id FROM courses WHERE category_id = ?)",
+        args: [categoryId],
+      },
       // Delete courses in this category
-      db.prepare(
-        "DELETE FROM enrollments WHERE course_id IN (SELECT id FROM courses WHERE category_id = ?)"
-      ).run(categoryId);
-      db.prepare("DELETE FROM courses WHERE category_id = ?").run(categoryId);
+      { sql: "DELETE FROM courses WHERE category_id = ?", args: [categoryId] },
       // Delete posts in this category
-      db.prepare("DELETE FROM posts WHERE category_id = ?").run(categoryId);
+      { sql: "DELETE FROM posts WHERE category_id = ?", args: [categoryId] },
       // Delete the category
-      return db.prepare("DELETE FROM categories WHERE id = ?").run(categoryId);
-    });
-
-    const result = deleteAll();
-
-    if (result.changes === 0) {
-      return NextResponse.json({ error: "板块不存在" }, { status: 404 });
-    }
+      { sql: "DELETE FROM categories WHERE id = ?", args: [categoryId] },
+    ], "write");
 
     return NextResponse.json({ message: "板块已删除" });
   } catch (error) {

@@ -17,21 +17,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = initializeDatabase();
+    const db = await initializeDatabase();
 
     // Find user by username or email
-    const user = db
-      .prepare(
-        "SELECT * FROM users WHERE username = ? OR email = ?"
-      )
-      .get(username, username) as UserRow | undefined;
+    const result = await db.execute({
+      sql: "SELECT * FROM users WHERE username = ? OR email = ?",
+      args: [username, username],
+    });
 
-    if (!user) {
+    if (result.rows.length === 0) {
       return NextResponse.json(
         { error: "用户不存在" },
         { status: 401 }
       );
     }
+
+    const user = result.rows[0] as unknown as UserRow;
 
     // Compare password
     if (!bcryptjs.compareSync(password, user.password_hash)) {

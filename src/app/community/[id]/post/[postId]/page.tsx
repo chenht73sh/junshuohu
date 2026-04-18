@@ -114,54 +114,57 @@ export default async function PostDetailPage({
   const postId = parseInt(postIdStr, 10);
   if (isNaN(categoryId) || isNaN(postId)) notFound();
 
-  const db = initializeDatabase();
+  const db = await initializeDatabase();
 
   // Increment view count
-  db.prepare("UPDATE posts SET view_count = view_count + 1 WHERE id = ?").run(
-    postId
-  );
+  await db.execute({
+    sql: "UPDATE posts SET view_count = view_count + 1 WHERE id = ?",
+    args: [postId],
+  });
 
-  const post = db
-    .prepare(
-      `SELECT p.*, 
-        u.display_name as author_name,
-        u.avatar_url as author_avatar,
-        u.bio as author_bio,
-        u.role as author_role,
-        c.name as category_name,
-        c.color as category_color,
-        (SELECT COUNT(*) FROM comments WHERE post_id = p.id) as comment_count
-      FROM posts p
-      JOIN users u ON p.author_id = u.id
-      JOIN categories c ON p.category_id = c.id
-      WHERE p.id = ? AND p.category_id = ?`
-    )
-    .get(postId, categoryId) as PostRow | undefined;
+  const postResult = await db.execute({
+    sql: `SELECT p.*, 
+      u.display_name as author_name,
+      u.avatar_url as author_avatar,
+      u.bio as author_bio,
+      u.role as author_role,
+      c.name as category_name,
+      c.color as category_color,
+      (SELECT COUNT(*) FROM comments WHERE post_id = p.id) as comment_count
+    FROM posts p
+    JOIN users u ON p.author_id = u.id
+    JOIN categories c ON p.category_id = c.id
+    WHERE p.id = ? AND p.category_id = ?`,
+    args: [postId, categoryId],
+  });
 
-  if (!post) notFound();
+  if (postResult.rows.length === 0) notFound();
+  const post = postResult.rows[0] as unknown as PostRow;
 
-  const images = db
-    .prepare("SELECT * FROM post_images WHERE post_id = ? ORDER BY id ASC")
-    .all(postId) as ImageRow[];
+  const imagesResult = await db.execute({
+    sql: "SELECT * FROM post_images WHERE post_id = ? ORDER BY id ASC",
+    args: [postId],
+  });
+  const images = imagesResult.rows as unknown as ImageRow[];
 
-  const attachments = db
-    .prepare(
-      "SELECT * FROM post_attachments WHERE post_id = ? ORDER BY id ASC"
-    )
-    .all(postId) as AttachmentRow[];
+  const attachmentsResult = await db.execute({
+    sql: "SELECT * FROM post_attachments WHERE post_id = ? ORDER BY id ASC",
+    args: [postId],
+  });
+  const attachments = attachmentsResult.rows as unknown as AttachmentRow[];
 
-  const comments = db
-    .prepare(
-      `SELECT cm.*, 
-        u.display_name as author_name,
-        u.avatar_url as author_avatar,
-        u.role as author_role
-      FROM comments cm
-      JOIN users u ON cm.author_id = u.id
-      WHERE cm.post_id = ?
-      ORDER BY cm.created_at ASC`
-    )
-    .all(postId) as CommentRow[];
+  const commentsResult = await db.execute({
+    sql: `SELECT cm.*, 
+      u.display_name as author_name,
+      u.avatar_url as author_avatar,
+      u.role as author_role
+    FROM comments cm
+    JOIN users u ON cm.author_id = u.id
+    WHERE cm.post_id = ?
+    ORDER BY cm.created_at ASC`,
+    args: [postId],
+  });
+  const comments = commentsResult.rows as unknown as CommentRow[];
 
   const categoryColor = post.category_color || "#8B6F47";
 

@@ -19,7 +19,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const db = initializeDatabase();
+    const db = await initializeDatabase();
 
     const updates: string[] = [];
     const values: unknown[] = [];
@@ -59,11 +59,12 @@ export async function PATCH(
 
     values.push(courseId);
 
-    const result = db
-      .prepare(`UPDATE courses SET ${updates.join(", ")} WHERE id = ?`)
-      .run(...values);
+    const result = await db.execute({
+      sql: `UPDATE courses SET ${updates.join(", ")} WHERE id = ?`,
+      args: values as (string | number | null)[],
+    });
 
-    if (result.changes === 0) {
+    if (result.rowsAffected === 0) {
       return NextResponse.json({ error: "课程不存在" }, { status: 404 });
     }
 
@@ -88,18 +89,12 @@ export async function DELETE(
       return NextResponse.json({ error: "无效的课程ID" }, { status: 400 });
     }
 
-    const db = initializeDatabase();
+    const db = await initializeDatabase();
 
-    const deleteAll = db.transaction(() => {
-      db.prepare("DELETE FROM enrollments WHERE course_id = ?").run(courseId);
-      return db.prepare("DELETE FROM courses WHERE id = ?").run(courseId);
-    });
-
-    const result = deleteAll();
-
-    if (result.changes === 0) {
-      return NextResponse.json({ error: "课程不存在" }, { status: 404 });
-    }
+    await db.batch([
+      { sql: "DELETE FROM enrollments WHERE course_id = ?", args: [courseId] },
+      { sql: "DELETE FROM courses WHERE id = ?", args: [courseId] },
+    ], "write");
 
     return NextResponse.json({ message: "课程已删除" });
   } catch (error) {

@@ -27,16 +27,18 @@ export interface UserRow {
  * Authenticate user by username/password.
  * Returns the user row (without password_hash) or null.
  */
-export function authenticateUser(
+export async function authenticateUser(
   username: string,
   password: string
-): Omit<UserRow, "password_hash"> | null {
-  const db = getDb();
-  const user = db
-    .prepare("SELECT * FROM users WHERE username = ?")
-    .get(username) as UserRow | undefined;
+): Promise<Omit<UserRow, "password_hash"> | null> {
+  const db = await getDb();
+  const result = await db.execute({
+    sql: "SELECT * FROM users WHERE username = ?",
+    args: [username],
+  });
 
-  if (!user) return null;
+  if (result.rows.length === 0) return null;
+  const user = result.rows[0] as unknown as UserRow;
   if (!bcryptjs.compareSync(password, user.password_hash)) return null;
 
   const { password_hash: _, ...safeUser } = user;

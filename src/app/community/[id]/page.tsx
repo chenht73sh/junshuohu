@@ -37,26 +37,28 @@ export default async function CategoryDetailPage({
   const categoryId = parseInt(id, 10);
   if (isNaN(categoryId)) notFound();
 
-  const db = initializeDatabase();
+  const db = await initializeDatabase();
 
-  const category = db
-    .prepare("SELECT * FROM categories WHERE id = ?")
-    .get(categoryId) as CategoryRow | undefined;
+  const catResult = await db.execute({
+    sql: "SELECT * FROM categories WHERE id = ?",
+    args: [categoryId],
+  });
 
-  if (!category) notFound();
+  if (catResult.rows.length === 0) notFound();
+  const category = catResult.rows[0] as unknown as CategoryRow;
 
-  const posts = db
-    .prepare(
-      `SELECT p.*, 
-        u.display_name as author_name,
-        u.avatar_url as author_avatar,
-        (SELECT COUNT(*) FROM comments WHERE post_id = p.id) as comment_count
-      FROM posts p
-      JOIN users u ON p.author_id = u.id
-      WHERE p.category_id = ?
-      ORDER BY p.is_pinned DESC, p.created_at DESC`
-    )
-    .all(categoryId) as PostRow[];
+  const postsResult = await db.execute({
+    sql: `SELECT p.*, 
+      u.display_name as author_name,
+      u.avatar_url as author_avatar,
+      (SELECT COUNT(*) FROM comments WHERE post_id = p.id) as comment_count
+    FROM posts p
+    JOIN users u ON p.author_id = u.id
+    WHERE p.category_id = ?
+    ORDER BY p.is_pinned DESC, p.created_at DESC`,
+    args: [categoryId],
+  });
+  const posts = postsResult.rows as unknown as PostRow[];
 
   const categoryColor = category.color || "#8B6F47";
 

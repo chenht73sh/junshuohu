@@ -19,7 +19,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const db = initializeDatabase();
+    const db = await initializeDatabase();
 
     // Build dynamic SET clause
     const updates: string[] = [];
@@ -49,11 +49,12 @@ export async function PATCH(
     updates.push("updated_at = datetime('now')");
     values.push(postId);
 
-    const result = db
-      .prepare(`UPDATE posts SET ${updates.join(", ")} WHERE id = ?`)
-      .run(...values);
+    const result = await db.execute({
+      sql: `UPDATE posts SET ${updates.join(", ")} WHERE id = ?`,
+      args: values as (string | number | null)[],
+    });
 
-    if (result.changes === 0) {
+    if (result.rowsAffected === 0) {
       return NextResponse.json({ error: "帖子不存在" }, { status: 404 });
     }
 
@@ -78,19 +79,13 @@ export async function DELETE(
       return NextResponse.json({ error: "无效的帖子ID" }, { status: 400 });
     }
 
-    const db = initializeDatabase();
+    const db = await initializeDatabase();
 
     // Delete comments first (foreign key), then the post
-    const deleteAll = db.transaction(() => {
-      db.prepare("DELETE FROM comments WHERE post_id = ?").run(postId);
-      return db.prepare("DELETE FROM posts WHERE id = ?").run(postId);
-    });
-
-    const result = deleteAll();
-
-    if (result.changes === 0) {
-      return NextResponse.json({ error: "帖子不存在" }, { status: 404 });
-    }
+    await db.batch([
+      { sql: "DELETE FROM comments WHERE post_id = ?", args: [postId] },
+      { sql: "DELETE FROM posts WHERE id = ?", args: [postId] },
+    ], "write");
 
     return NextResponse.json({ message: "帖子已删除" });
   } catch (error) {

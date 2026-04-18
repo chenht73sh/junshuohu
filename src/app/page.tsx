@@ -2,7 +2,7 @@ import { initializeDatabase } from "@/lib/db";
 import CategoryCard from "@/components/CategoryCard";
 import PostsTable from "@/components/PostsTable";
 import Link from "next/link";
-import { Users, Calendar, LayoutGrid, Pin, ArrowRight } from "lucide-react";
+import { Users, Calendar, LayoutGrid, Pin, ArrowRight, Star } from "lucide-react";
 
 interface CategoryRow {
   id: number;
@@ -29,6 +29,19 @@ interface AnnouncementPreview {
   created_at: string;
 }
 
+interface ActivityPreview {
+  id: number;
+  title: string;
+  activity_date: string;
+  start_time: string | null;
+  location: string | null;
+  category_name: string | null;
+  category_color: string | null;
+  participant_count: number;
+  cover_image: string | null;
+  status: string;
+}
+
 function formatAnnouncementDate(dateStr: string): string {
   const date = new Date(dateStr + "Z");
   return date.toLocaleDateString("zh-CN", {
@@ -37,17 +50,17 @@ function formatAnnouncementDate(dateStr: string): string {
   });
 }
 
-export default function HomePage() {
-  const db = initializeDatabase();
+export default async function HomePage() {
+  const db = await initializeDatabase();
 
-  const categories = db
-    .prepare(
-      `SELECT c.*, 
-        (SELECT COUNT(*) FROM posts WHERE category_id = c.id) as post_count
-      FROM categories c
-      ORDER BY c.sort_order ASC`
-    )
-    .all() as CategoryRow[];
+  const categoriesResult = await db.execute({
+    sql: `SELECT c.*, 
+      (SELECT COUNT(*) FROM posts WHERE category_id = c.id) as post_count
+    FROM categories c
+    ORDER BY c.sort_order ASC`,
+    args: [],
+  });
+  const categories = categoriesResult.rows as unknown as CategoryRow[];
 
   // Extract basic category info for the PostsTable filter dropdown
   const categoryBasics: CategoryBasic[] = categories.map((c) => ({
@@ -57,15 +70,30 @@ export default function HomePage() {
   }));
 
   // Fetch latest announcements for homepage banner
-  const latestAnnouncements = db
-    .prepare(
-      `SELECT id, title, image_url, is_pinned, created_at
-       FROM announcements
-       WHERE expire_at IS NULL OR expire_at > datetime('now')
-       ORDER BY is_pinned DESC, created_at DESC
-       LIMIT 3`
-    )
-    .all() as AnnouncementPreview[];
+  const annResult = await db.execute({
+    sql: `SELECT id, title, image_url, is_pinned, created_at
+         FROM announcements
+         WHERE expire_at IS NULL OR expire_at > datetime('now')
+         ORDER BY is_pinned DESC, created_at DESC
+         LIMIT 3`,
+    args: [],
+  });
+  const latestAnnouncements = annResult.rows as unknown as AnnouncementPreview[];
+
+  // Fetch upcoming activities for homepage
+  const actResult = await db.execute({
+    sql: `SELECT
+        a.id, a.title, a.activity_date, a.start_time, a.location, a.cover_image, a.status,
+        c.name as category_name, c.color as category_color,
+        (SELECT COUNT(*) FROM activity_participants WHERE activity_id = a.id) as participant_count
+      FROM activities a
+      LEFT JOIN categories c ON c.id = a.category_id
+      WHERE a.status IN ('upcoming', 'ongoing')
+      ORDER BY a.activity_date ASC, a.start_time ASC
+      LIMIT 3`,
+    args: [],
+  });
+  const upcomingActivities = actResult.rows as unknown as ActivityPreview[];
 
   return (
     <div>
@@ -143,6 +171,15 @@ export default function HomePage() {
                 <div className="text-xs text-text-muted">特色板块</div>
               </div>
             </div>
+            <Link href="/leaderboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                <Star size={20} className="text-amber-500" />
+              </div>
+              <div>
+                <div className="text-xl font-bold text-text-primary">🏆</div>
+                <div className="text-xs text-text-muted">积分排行</div>
+              </div>
+            </Link>
           </div>
         </div>
       </section>
@@ -195,6 +232,66 @@ export default function HomePage() {
                     <p className="text-xs text-text-muted">
                       {formatAnnouncementDate(ann.created_at)}
                     </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Upcoming Activities */}
+      {upcomingActivities.length > 0 && (
+        <section className="py-8 sm:py-10">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-serif text-xl sm:text-2xl font-bold flex items-center gap-2">
+                🎪 近期活动
+              </h2>
+              <Link
+                href="/activities"
+                className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary-dark transition-colors"
+              >
+                查看全部
+                <ArrowRight size={14} />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {upcomingActivities.map((act) => (
+                <Link
+                  key={act.id}
+                  href={`/activities/${act.id}`}
+                  className="block border border-border rounded-lg overflow-hidden bg-surface hover:border-primary/30 hover:shadow-card transition-all group"
+                >
+                  {act.cover_image ? (
+                    <div className="h-36 overflow-hidden bg-bg">
+                      <img
+                        src={act.cover_image}
+                        alt={act.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      className="h-24 flex items-center justify-center text-3xl"
+                      style={{ background: `linear-gradient(135deg, ${act.category_color || "#8B6F47"}22, ${act.category_color || "#8B6F47"}44)` }}
+                    >
+                      🎪
+                    </div>
+                  )}
+                  <div className="p-3.5">
+                    <h3 className="text-sm font-medium text-text-primary line-clamp-1 group-hover:text-primary transition-colors mb-1.5">
+                      {act.title}
+                    </h3>
+                    <div className="flex items-center gap-3 text-xs text-text-muted">
+                      <span className="flex items-center gap-1">
+                        <Calendar size={11} />
+                        {new Date(act.activity_date + "T00:00:00").toLocaleDateString("zh-CN", { month: "short", day: "numeric" })}
+                      </span>
+                      {act.location && (
+                        <span className="truncate max-w-[80px]">{act.location}</span>
+                      )}
+                    </div>
                   </div>
                 </Link>
               ))}

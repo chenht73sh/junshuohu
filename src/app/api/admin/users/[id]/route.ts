@@ -36,12 +36,13 @@ export async function PATCH(
       );
     }
 
-    const db = initializeDatabase();
-    const result = db
-      .prepare("UPDATE users SET role = ? WHERE id = ?")
-      .run(role, userId);
+    const db = await initializeDatabase();
+    const result = await db.execute({
+      sql: "UPDATE users SET role = ? WHERE id = ?",
+      args: [role, userId],
+    });
 
-    if (result.changes === 0) {
+    if (result.rowsAffected === 0) {
       return NextResponse.json({ error: "用户不存在" }, { status: 404 });
     }
 
@@ -74,10 +75,13 @@ export async function DELETE(
       );
     }
 
-    const db = initializeDatabase();
-    const result = db.prepare("DELETE FROM users WHERE id = ?").run(userId);
+    const db = await initializeDatabase();
+    const result = await db.execute({
+      sql: "DELETE FROM users WHERE id = ?",
+      args: [userId],
+    });
 
-    if (result.changes === 0) {
+    if (result.rowsAffected === 0) {
       return NextResponse.json({ error: "用户不存在" }, { status: 404 });
     }
 

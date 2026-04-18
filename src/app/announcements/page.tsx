@@ -27,22 +27,22 @@ function formatDate(dateStr: string): string {
   });
 }
 
-export default function AnnouncementsPage() {
-  const db = initializeDatabase();
+export default async function AnnouncementsPage() {
+  const db = await initializeDatabase();
 
-  const announcements = db
-    .prepare(
-      `SELECT a.*,
-        u.display_name as author_name,
-        c.name as category_name,
-        c.color as category_color
-      FROM announcements a
-      JOIN users u ON a.author_id = u.id
-      LEFT JOIN categories c ON a.category_id = c.id
-      WHERE a.expire_at IS NULL OR a.expire_at > datetime('now')
-      ORDER BY a.is_pinned DESC, a.created_at DESC`
-    )
-    .all() as AnnouncementRow[];
+  const result = await db.execute({
+    sql: `SELECT a.*,
+      u.display_name as author_name,
+      c.name as category_name,
+      c.color as category_color
+    FROM announcements a
+    JOIN users u ON a.author_id = u.id
+    LEFT JOIN categories c ON a.category_id = c.id
+    WHERE a.expire_at IS NULL OR a.expire_at > datetime('now')
+    ORDER BY a.is_pinned DESC, a.created_at DESC`,
+    args: [],
+  });
+  const announcements = result.rows as unknown as AnnouncementRow[];
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-14">

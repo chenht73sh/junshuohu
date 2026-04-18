@@ -10,6 +10,7 @@ import {
   LayoutGrid,
   BookOpen,
   Megaphone,
+  Calendar,
   Menu,
   X,
   Shield,
@@ -23,6 +24,7 @@ const sidebarItems = [
   { label: "板块管理", href: "/admin/categories", icon: LayoutGrid },
   { label: "公告管理", href: "/admin/announcements", icon: Megaphone },
   { label: "课程管理", href: "/admin/courses", icon: BookOpen },
+  { label: "活动管理", href: "/admin/activities", icon: Calendar },
 ];
 
 export default function AdminLayout({

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const filter = searchParams.get("filter") || "all";
     const category = searchParams.get("category") || "";
 
-    const db = initializeDatabase();
+    const db = await initializeDatabase();
 
     // Build WHERE clauses
     const conditions: string[] = [];
@@ -34,14 +34,17 @@ export async function GET(request: NextRequest) {
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
     // Get total count
-    const countStmt = db.prepare(`SELECT COUNT(*) as total FROM posts p ${whereClause}`);
-    const totalCount = (countStmt.get(...params) as { total: number }).total;
+    const countResult = await db.execute({
+      sql: `SELECT COUNT(*) as total FROM posts p ${whereClause}`,
+      args: params,
+    });
+    const totalCount = countResult.rows[0].total as number;
     const totalPages = Math.max(1, Math.ceil(totalCount / limit));
     const offset = (page - 1) * limit;
 
     // Fetch posts with author, category, comment count, and last reply time
-    const postsStmt = db.prepare(`
-      SELECT p.*,
+    const postsResult = await db.execute({
+      sql: `SELECT p.*,
         u.display_name as author_name,
         c.name as category_name,
         c.color as category_color,
@@ -55,13 +58,12 @@ export async function GET(request: NextRequest) {
       JOIN categories c ON p.category_id = c.id
       ${whereClause}
       ORDER BY p.is_pinned DESC, last_reply_time DESC
-      LIMIT ? OFFSET ?
-    `);
-
-    const posts = postsStmt.all(...params, limit, offset);
+      LIMIT ? OFFSET ?`,
+      args: [...params, limit, offset],
+    });
 
     return NextResponse.json({
-      posts,
+      posts: postsResult.rows,
       total: totalCount,
       page,
       limit,
