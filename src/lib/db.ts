@@ -107,6 +107,18 @@ async function migrateDatabase(): Promise<void> {
       args: [],
     },
     {
+      sql: `CREATE TABLE IF NOT EXISTS uploaded_images (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        filename TEXT NOT NULL,
+        original_name TEXT NOT NULL,
+        mime_type TEXT NOT NULL,
+        data TEXT NOT NULL,
+        file_size INTEGER NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+      args: [],
+    },
+    {
       sql: `CREATE TABLE IF NOT EXISTS post_images (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         post_id INTEGER NOT NULL,

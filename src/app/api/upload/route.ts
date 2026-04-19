@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { JwtPayload } from "@/lib/auth";
-import path from "path";
-import fs from "fs";
+import { getDb } from "@/lib/db";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -75,27 +74,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build date-based directory
-    const now = new Date();
-    const year = now.getFullYear().toString();
-    const month = (now.getMonth() + 1).toString().padStart(2, "0");
-    const relDir = path.join("uploads", year, month);
-    const absDir = path.join(process.cwd(), "public", relDir);
-
-    if (!fs.existsSync(absDir)) {
-      fs.mkdirSync(absDir, { recursive: true });
-    }
-
-    // Generate unique filename
+    const buffer = Buffer.from(await file.arrayBuffer());
     const uuid = crypto.randomUUID();
     const ext = getExtFromMime(file.type);
     const filename = `${uuid}${ext}`;
-    const absPath = path.join(absDir, filename);
-    const filePath = `/${relDir.replace(/\\/g, "/")}/${filename}`;
+    const base64 = buffer.toString("base64");
 
-    // Write file
-    const buffer = Buffer.from(await file.arrayBuffer());
-    fs.writeFileSync(absPath, buffer);
+    // Store in Turso database to survive ephemeral filesystem restarts
+    const db = await getDb();
+    const result = await db.execute({
+      sql: `INSERT INTO uploaded_images (filename, original_name, mime_type, data, file_size)
+            VALUES (?, ?, ?, ?, ?)`,
+      args: [filename, file.name, file.type, base64, file.size],
+    });
+
+    const imageId = result.lastInsertRowid!;
+    const filePath = `/api/images/${imageId}`;
 
     return NextResponse.json({
       filename,

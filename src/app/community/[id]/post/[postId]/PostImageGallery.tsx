@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { X } from "lucide-react";
 
 interface PostImage {
@@ -39,12 +38,11 @@ export default function PostImageGallery({
             className="relative aspect-square cursor-pointer group overflow-hidden rounded-lg"
             onClick={() => setLightboxIndex(i)}
           >
-            <Image
+            {/* Use <img> instead of next/image to support base64 data URIs */}
+            <img
               src={img.filePath}
               alt={img.originalName}
-              fill
-              className="object-cover transition-transform duration-200 group-hover:scale-105"
-              sizes={count === 1 ? "512px" : count === 2 ? "50vw" : "33vw"}
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
             />
           </div>
         ))}
@@ -94,13 +92,11 @@ export default function PostImageGallery({
             </>
           )}
 
-          <div className="relative max-w-4xl max-h-[85vh] w-full h-full">
-            <Image
+          <div className="relative max-w-4xl max-h-[85vh] w-full h-full flex items-center justify-center">
+            <img
               src={images[lightboxIndex].filePath}
               alt={images[lightboxIndex].originalName}
-              fill
-              className="object-contain"
-              sizes="100vw"
+              className="max-w-full max-h-full object-contain"
               onClick={(e) => e.stopPropagation()}
             />
           </div>

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { initializeDatabase } from "@/lib/db";
 import CategoryCard from "@/components/CategoryCard";
 

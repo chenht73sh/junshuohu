@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { initializeDatabase } from "@/lib/db";
 import Link from "next/link";
 import {
@@ -314,7 +316,7 @@ export default async function PostDetailPage({
                         </p>
                       </div>
                       <a
-                        href={att.file_path}
+                        href={`${att.file_path}?download=1`}
                         download={att.original_name}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary bg-primary/10 rounded-md hover:bg-primary/20 transition-colors"
                       >

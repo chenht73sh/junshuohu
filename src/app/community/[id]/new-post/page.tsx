@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import {
   ArrowLeft,
   Send,
@@ -391,11 +390,10 @@ export default function NewPostPage() {
               <div className="mt-3 grid grid-cols-3 sm:grid-cols-4 gap-3">
                 {images.map((img, i) => (
                   <div key={i} className="relative group aspect-square">
-                    <Image
+                    <img
                       src={img.previewUrl}
                       alt={img.originalName}
-                      fill
-                      className="object-cover rounded-lg"
+                      className="absolute inset-0 w-full h-full object-cover rounded-lg"
                     />
                     <button
                       type="button"

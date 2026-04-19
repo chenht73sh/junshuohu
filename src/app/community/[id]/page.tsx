@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { initializeDatabase } from "@/lib/db";
 import PostCard from "@/components/PostCard";
 import Link from "next/link";

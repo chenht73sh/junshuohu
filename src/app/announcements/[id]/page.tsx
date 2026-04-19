@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { initializeDatabase } from "@/lib/db";
 import Link from "next/link";
 import { ArrowLeft, Pin, Calendar, User, Tag } from "lucide-react";

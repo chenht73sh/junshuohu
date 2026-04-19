@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { initializeDatabase } from "@/lib/db";
 import CategoryCard from "@/components/CategoryCard";
 import PostsTable from "@/components/PostsTable";
@@ -167,7 +169,7 @@ export default async function HomePage() {
                 <LayoutGrid size={20} className="text-secondary" />
               </div>
               <div>
-                <div className="text-xl font-bold text-text-primary">9</div>
+                <div className="text-xl font-bold text-text-primary">{categories.length}</div>
                 <div className="text-xs text-text-muted">特色板块</div>
               </div>
             </div>
@@ -305,7 +307,7 @@ export default async function HomePage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10">
             <h2 className="font-serif text-2xl sm:text-3xl font-bold mb-3">
-              九大特色板块
+              {categories.length > 0 ? `${categories.length}大特色板块` : "特色板块"}
             </h2>
             <p className="text-text-secondary max-w-xl mx-auto">
               每一个板块，都有一位用心的主理人。在这里，你一定能找到属于你的那个角落。
