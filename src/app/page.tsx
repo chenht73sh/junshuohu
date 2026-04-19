@@ -106,9 +106,12 @@ export default async function HomePage() {
             <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold text-text-inverse mb-4 tracking-wide">
               君说乎
             </h1>
-            <p className="font-serif text-lg sm:text-xl text-text-inverse/80 mb-6">
-              学而时习之，不亦说乎？
-            </p>
+            <div className="font-serif text-lg sm:text-xl text-text-inverse/80 mb-6 space-y-2">
+              <p className="tracking-widest">学而时习之，不亦说乎？</p>
+              <p className="tracking-widest">有朋自远方来，不亦乐乎？</p>
+              <p className="tracking-widest">人不知而不愠，不亦君子乎？</p>
+              <p className="mt-3 text-sm sm:text-base text-text-inverse/50 tracking-wide">——《论语·学而》</p>
+            </div>
             <p className="max-w-2xl mx-auto text-base sm:text-lg text-text-inverse/70 leading-relaxed mb-10">
               这里是一群都市人的精神自留地。我们相信，真正的富足，
               不在物质的丰盈，而在灵魂的丰盛。在这里，你会遇见同频的灵魂，

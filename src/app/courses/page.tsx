@@ -10,6 +10,7 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
+  Eye,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -27,6 +28,16 @@ interface Course {
   created_at: string;
   category_name: string;
   category_color: string;
+}
+
+function getStatusInfo(course: Course, isFull: boolean) {
+  if (course.status === "closed" || course.status === "ended") {
+    return { label: "已结束", className: "text-text-muted bg-border-light" };
+  }
+  if (isFull) {
+    return { label: "已满", className: "text-error bg-error/10" };
+  }
+  return { label: "报名中", className: "text-success bg-success/10" };
 }
 
 export default function CoursesPage() {
@@ -119,7 +130,6 @@ export default function CoursesPage() {
     try {
       const d = new Date(dateStr);
       return d.toLocaleDateString("zh-CN", {
-        year: "numeric",
         month: "long",
         day: "numeric",
         weekday: "short",
@@ -134,7 +144,7 @@ export default function CoursesPage() {
   const openCourses = courses.filter((c) => c.status === "open");
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
       {/* Breadcrumb */}
       <Link
         href="/"
@@ -165,146 +175,255 @@ export default function CoursesPage() {
           <p className="text-text-muted text-sm">请稍后再来看看 ✨</p>
         </div>
       ) : (
-        <div className="grid gap-6">
-          {openCourses.map((course) => {
-            const isFull =
-              course.max_participants !== null &&
-              course.current_participants >= course.max_participants;
-            const isEnrolled = enrolledIds.has(course.id);
-            const progress =
-              course.max_participants
-                ? (course.current_participants / course.max_participants) * 100
-                : 0;
+        <>
+          {/* ===== Desktop Table ===== */}
+          <div className="hidden md:block card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-accent-light/30">
+                    <th className="text-left px-5 py-3.5 font-semibold text-text-primary whitespace-nowrap">
+                      课程名称
+                    </th>
+                    <th className="text-left px-5 py-3.5 font-semibold text-text-primary whitespace-nowrap">
+                      讲师
+                    </th>
+                    <th className="text-left px-5 py-3.5 font-semibold text-text-primary whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1"><Calendar size={13} /> 时间</span>
+                    </th>
+                    <th className="text-left px-5 py-3.5 font-semibold text-text-primary whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1"><MapPin size={13} /> 地点</span>
+                    </th>
+                    <th className="text-center px-5 py-3.5 font-semibold text-text-primary whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1"><Users size={13} /> 报名/限额</span>
+                    </th>
+                    <th className="text-center px-5 py-3.5 font-semibold text-text-primary whitespace-nowrap">
+                      状态
+                    </th>
+                    <th className="text-center px-5 py-3.5 font-semibold text-text-primary whitespace-nowrap">
+                      操作
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border-light">
+                  {openCourses.map((course) => {
+                    const isFull =
+                      course.max_participants !== null &&
+                      course.current_participants >= course.max_participants;
+                    const isEnrolled = enrolledIds.has(course.id);
+                    const statusInfo = getStatusInfo(course, isFull);
 
-            return (
-              <div
-                key={course.id}
-                className="card overflow-hidden hover:shadow-card-hover"
-              >
-                <div className="flex">
-                  {/* Left color bar */}
-                  <div
-                    className="w-1.5 sm:w-2 shrink-0"
-                    style={{
-                      backgroundColor: course.category_color || "#8B6F47",
-                    }}
-                  />
-
-                  <div className="flex-1 p-5 sm:p-6">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                      {/* Course info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span
-                            className="px-2 py-0.5 text-xs rounded-md font-medium"
-                            style={{
-                              color: course.category_color || "#8B6F47",
-                              backgroundColor: `${course.category_color || "#8B6F47"}15`,
-                            }}
-                          >
-                            {course.category_name}
-                          </span>
-                        </div>
-
-                        <Link href={`/courses/${course.id}`}>
-                          <h2 className="font-serif text-xl font-bold text-text-primary hover:text-primary transition-colors mb-2">
-                            {course.title}
-                          </h2>
-                        </Link>
-
-                        {course.description && (
-                          <p className="text-sm text-text-secondary mb-3 line-clamp-2">
-                            {course.description}
-                          </p>
-                        )}
-
-                        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-text-muted">
-                          <span className="flex items-center gap-1.5">
-                            👨‍🏫 {course.instructor}
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <Calendar size={14} />
-                            {formatDate(course.start_time)}
-                          </span>
-                          {course.location && (
-                            <span className="flex items-center gap-1.5">
-                              <MapPin size={14} />
-                              {course.location}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Progress bar */}
-                        {course.max_participants && (
-                          <div className="mt-4">
-                            <div className="flex items-center justify-between text-xs text-text-muted mb-1.5">
-                              <span className="flex items-center gap-1">
-                                <Users size={12} />
-                                报名进度
-                              </span>
-                              <span>
-                                {course.current_participants} / {course.max_participants} 人
-                              </span>
-                            </div>
-                            <div className="w-full h-2 bg-border-light rounded-full overflow-hidden">
-                              <div
-                                className="h-full rounded-full transition-all duration-500"
+                    return (
+                      <tr
+                        key={course.id}
+                        className="hover:bg-accent-light/20 transition-colors"
+                      >
+                        {/* 课程名称 */}
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="inline-block w-1 h-8 rounded-full shrink-0"
+                              style={{ backgroundColor: course.category_color || "#8B6F47" }}
+                            />
+                            <div className="min-w-0">
+                              <Link
+                                href={`/courses/${course.id}`}
+                                className="font-medium text-text-primary hover:text-primary transition-colors line-clamp-1"
+                              >
+                                {course.title}
+                              </Link>
+                              <span
+                                className="text-xs px-1.5 py-0.5 rounded mt-0.5 inline-block"
                                 style={{
-                                  width: `${Math.min(progress, 100)}%`,
-                                  backgroundColor: isFull
-                                    ? "var(--color-error)"
-                                    : progress > 80
-                                      ? "var(--color-warning)"
-                                      : "var(--color-success)",
+                                  color: course.category_color || "#8B6F47",
+                                  backgroundColor: `${course.category_color || "#8B6F47"}15`,
                                 }}
-                              />
+                              >
+                                {course.category_name}
+                              </span>
                             </div>
                           </div>
-                        )}
+                        </td>
+
+                        {/* 讲师 */}
+                        <td className="px-5 py-4 text-text-secondary whitespace-nowrap">
+                          {course.instructor}
+                        </td>
+
+                        {/* 时间 */}
+                        <td className="px-5 py-4 text-text-secondary whitespace-nowrap">
+                          {formatDate(course.start_time)}
+                        </td>
+
+                        {/* 地点 */}
+                        <td className="px-5 py-4 text-text-secondary max-w-[160px] truncate">
+                          {course.location || "待定"}
+                        </td>
+
+                        {/* 报名/限额 */}
+                        <td className="px-5 py-4 text-center whitespace-nowrap">
+                          <span className="text-text-primary font-medium">
+                            {course.current_participants}
+                          </span>
+                          <span className="text-text-muted">
+                            {" / "}
+                            {course.max_participants ?? "∞"}
+                          </span>
+                        </td>
+
+                        {/* 状态 */}
+                        <td className="px-5 py-4 text-center">
+                          <span
+                            className={`inline-block px-2.5 py-1 text-xs font-medium rounded-full ${statusInfo.className}`}
+                          >
+                            {statusInfo.label}
+                          </span>
+                        </td>
+
+                        {/* 操作 */}
+                        <td className="px-5 py-4 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <Link
+                              href={`/courses/${course.id}`}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-primary border border-primary/30 rounded-lg hover:bg-primary/5 transition-colors"
+                            >
+                              <Eye size={13} />
+                              详情
+                            </Link>
+                            {isEnrolled ? (
+                              <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-text-muted bg-border-light rounded-lg">
+                                <CheckCircle size={13} />
+                                已报名
+                              </span>
+                            ) : isFull ? (
+                              <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-error/70 bg-error/5 border border-error/20 rounded-lg">
+                                <XCircle size={13} />
+                                已满
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => handleEnroll(course.id)}
+                                disabled={enrollingId === course.id}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-text-inverse bg-success hover:bg-success/90 rounded-lg disabled:opacity-50 transition-colors"
+                              >
+                                {enrollingId === course.id ? (
+                                  <Loader2 size={13} className="animate-spin" />
+                                ) : (
+                                  <Users size={13} />
+                                )}
+                                {enrollingId === course.id ? "报名中..." : "报名"}
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* ===== Mobile Cards ===== */}
+          <div className="md:hidden grid gap-4">
+            {openCourses.map((course) => {
+              const isFull =
+                course.max_participants !== null &&
+                course.current_participants >= course.max_participants;
+              const isEnrolled = enrolledIds.has(course.id);
+              const statusInfo = getStatusInfo(course, isFull);
+
+              return (
+                <div
+                  key={course.id}
+                  className="card overflow-hidden"
+                >
+                  <div className="flex">
+                    {/* Left color bar */}
+                    <div
+                      className="w-1.5 shrink-0"
+                      style={{ backgroundColor: course.category_color || "#8B6F47" }}
+                    />
+                    <div className="flex-1 p-4">
+                      {/* Header row */}
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <div className="min-w-0 flex-1">
+                          <Link
+                            href={`/courses/${course.id}`}
+                            className="font-serif text-base font-bold text-text-primary hover:text-primary transition-colors line-clamp-2"
+                          >
+                            {course.title}
+                          </Link>
+                        </div>
+                        <span
+                          className={`shrink-0 px-2 py-0.5 text-xs font-medium rounded-full ${statusInfo.className}`}
+                        >
+                          {statusInfo.label}
+                        </span>
                       </div>
 
-                      {/* Enroll button */}
-                      <div className="sm:ml-4 shrink-0">
+                      {/* Info rows */}
+                      <div className="space-y-1.5 text-sm text-text-muted mb-3">
+                        <div className="flex items-center gap-1.5">
+                          👨‍🏫 <span className="text-text-secondary">{course.instructor}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Calendar size={13} />
+                          <span>{formatDate(course.start_time)}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <MapPin size={13} />
+                          <span>{course.location || "待定"}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Users size={13} />
+                          <span>
+                            {course.current_participants} / {course.max_participants ?? "∞"} 人
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/courses/${course.id}`}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-primary border border-primary/30 rounded-lg hover:bg-primary/5 transition-colors"
+                        >
+                          <Eye size={13} />
+                          详情
+                        </Link>
                         {isEnrolled ? (
-                          <button
-                            disabled
-                            className="flex items-center gap-1.5 px-5 py-2.5 text-sm font-medium text-text-muted bg-border-light rounded-lg cursor-default"
-                          >
-                            <CheckCircle size={16} />
-                            已报名 ✓
-                          </button>
+                          <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-text-muted bg-border-light rounded-lg">
+                            <CheckCircle size={13} />
+                            已报名
+                          </span>
                         ) : isFull ? (
-                          <button
-                            disabled
-                            className="flex items-center gap-1.5 px-5 py-2.5 text-sm font-medium text-error/70 bg-error/5 border border-error/20 rounded-lg cursor-not-allowed"
-                          >
-                            <XCircle size={16} />
-                            已满员
-                          </button>
+                          <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-error/70 bg-error/5 border border-error/20 rounded-lg">
+                            <XCircle size={13} />
+                            已满
+                          </span>
                         ) : (
                           <button
                             onClick={() => handleEnroll(course.id)}
                             disabled={enrollingId === course.id}
-                            className="flex items-center gap-1.5 px-5 py-2.5 text-sm font-medium text-text-inverse bg-success hover:bg-success/90 rounded-lg disabled:opacity-50 transition-colors"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-text-inverse bg-success hover:bg-success/90 rounded-lg disabled:opacity-50 transition-colors"
                           >
                             {enrollingId === course.id ? (
-                              <Loader2 size={16} className="animate-spin" />
+                              <Loader2 size={13} className="animate-spin" />
                             ) : (
-                              <Users size={16} />
+                              <Users size={13} />
                             )}
-                            {enrollingId === course.id
-                              ? "报名中..."
-                              : "我要报名"}
+                            {enrollingId === course.id ? "报名中..." : "报名"}
                           </button>
                         )}
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );
