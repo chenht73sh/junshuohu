@@ -32,8 +32,13 @@ export default function RegisterPage() {
     setError("");
 
     // Client-side validation
-    if (!form.username.trim() || !form.display_name.trim() || !form.password || !form.invite_code.trim()) {
+    if (!form.username.trim() || !form.display_name.trim() || !form.phone.trim() || !form.password || !form.invite_code.trim()) {
       setError("请填写所有必填项");
+      return;
+    }
+
+    if (!/^1[3-9]\d{9}$/.test(form.phone.trim())) {
+      setError("请输入正确的手机号码");
       return;
     }
 
@@ -156,14 +161,14 @@ export default function RegisterPage() {
                 htmlFor="phone"
                 className="block text-sm font-medium text-text-primary mb-1.5"
               >
-                手机号
+                手机号 <span className="text-error">*</span>
               </label>
               <input
                 id="phone"
                 type="tel"
                 value={form.phone}
                 onChange={(e) => updateField("phone", e.target.value)}
-                placeholder="选填，预留联系方式"
+                placeholder="请输入手机号码"
                 autoComplete="tel"
                 maxLength={20}
                 className="w-full px-4 py-3 bg-bg border border-border rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
@@ -182,7 +187,7 @@ export default function RegisterPage() {
                 type="text"
                 value={form.invite_code}
                 onChange={(e) => updateField("invite_code", e.target.value)}
-                placeholder="请输入邀请码（如无邀请码请联系社群管理员获取）"
+                placeholder="请输入管理员提供的邀请码"
                 maxLength={50}
                 className="w-full px-4 py-3 bg-bg border border-border rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
               />
@@ -246,6 +251,7 @@ export default function RegisterPage() {
                 submitting ||
                 !form.username.trim() ||
                 !form.display_name.trim() ||
+                !form.phone.trim() ||
                 !form.password ||
                 !form.confirmPassword ||
                 !form.invite_code.trim()

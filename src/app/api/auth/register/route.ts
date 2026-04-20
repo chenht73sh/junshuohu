@@ -4,26 +4,32 @@ import { hashPassword, generateToken } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-const VALID_INVITE_CODE = "junshuohu2026";
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { username, email, password, display_name, phone, invite_code } = body;
 
-    // Validate invite code
-    if (!invite_code || invite_code !== VALID_INVITE_CODE) {
+    // Validate required fields
+    if (!username || !password || !display_name || !phone) {
       return NextResponse.json(
-        { error: "邀请码不正确，如无邀请码请联系社群管理员获取" },
-        { status: 403 }
+        { error: "用户名、密码、显示名和手机号为必填项" },
+        { status: 400 }
       );
     }
 
-    // Validate required fields
-    if (!username || !password || !display_name) {
+    // Validate phone format
+    if (!/^1[3-9]\d{9}$/.test(phone)) {
       return NextResponse.json(
-        { error: "用户名、密码和显示名为必填项" },
+        { error: "手机号格式不正确" },
         { status: 400 }
+      );
+    }
+
+    // Validate invite code
+    if (!invite_code) {
+      return NextResponse.json(
+        { error: "邀请码无效或已使用，请联系管理员获取" },
+        { status: 403 }
       );
     }
 
@@ -49,6 +55,25 @@ export async function POST(request: NextRequest) {
     }
 
     const db = await initializeDatabase();
+
+    // Validate invite code against database
+    const codeResult = await db.execute({
+      sql: `SELECT id, max_uses, used_count, is_active FROM invite_codes
+            WHERE code = ? AND is_active = 1 AND used_count < max_uses`,
+      args: [invite_code.toUpperCase()],
+    });
+    if (codeResult.rows.length === 0) {
+      return NextResponse.json(
+        { error: "邀请码无效或已使用，请联系管理员获取" },
+        { status: 403 }
+      );
+    }
+    const inviteCode = codeResult.rows[0] as unknown as {
+      id: number;
+      max_uses: number;
+      used_count: number;
+      is_active: number;
+    };
 
     // Check username uniqueness
     const existingUsername = await db.execute({
@@ -82,13 +107,23 @@ export async function POST(request: NextRequest) {
     const result = await db.execute({
       sql: `INSERT INTO users (username, email, password_hash, display_name, phone, role)
             VALUES (?, ?, ?, ?, ?, 'member')`,
-      args: [username, email || null, passwordHash, display_name, phone || null],
+      args: [username, email || null, passwordHash, display_name, phone],
+    });
+
+    const newUserId = result.lastInsertRowid!;
+
+    // Update invite code usage
+    const newUsedCount = inviteCode.used_count + 1;
+    const shouldDeactivate = inviteCode.max_uses === 1 || newUsedCount >= inviteCode.max_uses;
+    await db.execute({
+      sql: `UPDATE invite_codes SET used_count = used_count + 1, used_by = ?, used_at = datetime('now')${shouldDeactivate ? ", is_active = 0" : ""} WHERE id = ?`,
+      args: [newUserId, inviteCode.id],
     });
 
     const userResult = await db.execute({
       sql: `SELECT id, username, email, display_name, avatar_url, role, bio, created_at
             FROM users WHERE id = ?`,
-      args: [result.lastInsertRowid!],
+      args: [newUserId],
     });
 
     const user = userResult.rows[0] as unknown as {

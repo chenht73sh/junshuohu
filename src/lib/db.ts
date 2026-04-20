@@ -244,6 +244,23 @@ async function migrateDatabase(): Promise<void> {
       )`,
       args: [],
     },
+    {
+      sql: `CREATE TABLE IF NOT EXISTS invite_codes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        code TEXT UNIQUE NOT NULL,
+        created_by INTEGER NOT NULL,
+        used_by INTEGER,
+        max_uses INTEGER NOT NULL DEFAULT 1,
+        used_count INTEGER NOT NULL DEFAULT 0,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        note TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        used_at TEXT,
+        FOREIGN KEY (created_by) REFERENCES users(id),
+        FOREIGN KEY (used_by) REFERENCES users(id)
+      )`,
+      args: [],
+    },
   ], "write");
 
   // Add total_points column to users if it doesn't exist (idempotent via try/catch)
@@ -284,6 +301,8 @@ async function migrateDatabase(): Promise<void> {
     { sql: "CREATE INDEX IF NOT EXISTS idx_point_records_user ON point_records(user_id)", args: [] },
     { sql: "CREATE INDEX IF NOT EXISTS idx_point_records_action ON point_records(action)", args: [] },
     { sql: "CREATE INDEX IF NOT EXISTS idx_point_records_created ON point_records(created_at DESC)", args: [] },
+    { sql: "CREATE INDEX IF NOT EXISTS idx_invite_codes_code ON invite_codes(code)", args: [] },
+    { sql: "CREATE INDEX IF NOT EXISTS idx_invite_codes_active ON invite_codes(is_active)", args: [] },
   ], "write");
 }
 
@@ -389,8 +408,25 @@ export async function seedCourses(): Promise<void> {
   await db.batch(stmts, "write");
 }
 
+export async function seedInviteCodes(): Promise<void> {
+  await db.batch([
+    {
+      sql: `INSERT OR IGNORE INTO invite_codes (code, created_by, max_uses, note) VALUES (?, 1, 10, '初始通用邀请码')`,
+      args: ["JSHU2026"],
+    },
+    {
+      sql: `INSERT OR IGNORE INTO invite_codes (code, created_by, max_uses, note) VALUES (?, 1, 5, '欢迎码1')`,
+      args: ["WELCOME1"],
+    },
+    {
+      sql: `INSERT OR IGNORE INTO invite_codes (code, created_by, max_uses, note) VALUES (?, 1, 5, '欢迎码2')`,
+      args: ["WELCOME2"],
+    },
+  ], "write");
+}
+
 /**
- * Initialize the database: create tables, seed categories, admin & courses.
+ * Initialize the database: create tables, seed categories, admin, courses & invite codes.
  * Safe to call multiple times — all operations are idempotent.
  */
 export async function initializeDatabase(): Promise<Client> {
@@ -398,5 +434,6 @@ export async function initializeDatabase(): Promise<Client> {
   await seedCategories();
   await seedAdmin();
   await seedCourses();
+  await seedInviteCodes();
   return database;
 }

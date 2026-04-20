@@ -11,6 +11,7 @@ import {
   BookOpen,
   Megaphone,
   Calendar,
+  KeyRound,
   Menu,
   X,
   Shield,
@@ -20,6 +21,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const sidebarItems = [
   { label: "仪表盘", href: "/admin", icon: LayoutDashboard },
   { label: "用户管理", href: "/admin/users", icon: Users },
+  { label: "邀请码管理", href: "/admin/invite-codes", icon: KeyRound },
   { label: "帖子管理", href: "/admin/posts", icon: FileText },
   { label: "板块管理", href: "/admin/categories", icon: LayoutGrid },
   { label: "公告管理", href: "/admin/announcements", icon: Megaphone },
