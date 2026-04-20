@@ -390,18 +390,16 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ id: s
                   参与成员 <span className="text-text-muted font-normal">({participants.length})</span>
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {participants.slice(0, 12).map((p) => (
-                    <Link key={p.user_id} href={`/profile/${p.user_id}`} title={p.display_name}>
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary hover:bg-primary/20 transition-colors">
-                        {p.display_name.charAt(0)}
+                  {participants.map((p) => (
+                    <Link key={p.user_id} href={`/profile/${p.user_id}`}>
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors">
+                        <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary shrink-0">
+                          {p.display_name.charAt(0)}
+                        </div>
+                        <span className="text-xs font-medium text-primary">{p.display_name}</span>
                       </div>
                     </Link>
                   ))}
-                  {participants.length > 12 && (
-                    <div className="w-8 h-8 rounded-full bg-border flex items-center justify-center text-xs text-text-muted">
-                      +{participants.length - 12}
-                    </div>
-                  )}
                 </div>
               </div>
             )}
