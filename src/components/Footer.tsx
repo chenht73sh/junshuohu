@@ -31,7 +31,7 @@ export default function Footer() {
 
         {/* Links */}
         <div className="flex flex-wrap items-center justify-center gap-6 mb-8 text-sm text-text-muted">
-          <Link href="/community" className="hover:text-primary transition-colors">
+          <Link href="/categories" className="hover:text-primary transition-colors">
             社群板块
           </Link>
           <Link href="/courses" className="hover:text-primary transition-colors">

@@ -68,7 +68,7 @@ export default async function CategoryDetailPage({
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
       {/* Back link */}
       <Link
-        href="/community"
+        href="/categories"
         className="inline-flex items-center gap-1.5 text-sm text-text-muted hover:text-primary transition-colors mb-6"
       >
         <ArrowLeft size={16} />

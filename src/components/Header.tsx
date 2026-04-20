@@ -8,10 +8,11 @@ import { useAuth } from "@/contexts/AuthContext";
 const navItems = [
   { label: "首页", href: "/" },
   { label: "社群动态", href: "/community" },
+  { label: "社群板块", href: "/categories" },
+  { label: "课程报名", href: "/courses" },
   { label: "论坛公告", href: "/announcements" },
   { label: "活动档案", href: "/activities" },
   { label: "积分排行", href: "/leaderboard" },
-  { label: "课程报名", href: "/courses" },
   { label: "关于我们", href: "/about" },
 ];
 
