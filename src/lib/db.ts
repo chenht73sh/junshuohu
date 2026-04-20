@@ -253,6 +253,13 @@ async function migrateDatabase(): Promise<void> {
     // Column already exists — fine
   }
 
+  // Add phone column to users if it doesn't exist (idempotent via try/catch)
+  try {
+    await db.execute({ sql: "ALTER TABLE users ADD COLUMN phone TEXT", args: [] });
+  } catch {
+    // Column already exists — fine
+  }
+
   // Create indexes (separate batch since they reference tables created above)
   await db.batch([
     { sql: "CREATE INDEX IF NOT EXISTS idx_posts_category ON posts(category_id)", args: [] },
@@ -307,16 +314,25 @@ export async function seedCategories(): Promise<void> {
 }
 
 export async function seedAdmin(): Promise<void> {
-  const existing = await db.execute({ sql: "SELECT id FROM users WHERE username = ?", args: ["admin"] });
-  if (existing.rows.length > 0) return;
-
   const passwordHash = bcryptjs.hashSync("junshuohu2026", 10);
 
-  await db.execute({
-    sql: `INSERT OR IGNORE INTO users (username, email, password_hash, display_name, role, bio)
-          VALUES (?, ?, ?, ?, ?, ?)`,
-    args: ["admin", "admin@junshuohu.com", passwordHash, "管理员", "admin", "君说乎数字家园管理员"],
-  });
+  await db.batch([
+    {
+      sql: `INSERT OR IGNORE INTO users (username, email, password_hash, display_name, role, bio)
+            VALUES (?, ?, ?, ?, ?, ?)`,
+      args: ["admin", "admin@junshuohu.com", passwordHash, "管理员", "admin", "君说乎数字家园管理员"],
+    },
+    {
+      sql: `INSERT OR IGNORE INTO users (username, email, password_hash, display_name, role, bio)
+            VALUES (?, ?, ?, ?, ?, ?)`,
+      args: ["junjun", null, passwordHash, "君君", "admin", "君说乎数字家园管理员"],
+    },
+    {
+      sql: `INSERT OR IGNORE INTO users (username, email, password_hash, display_name, role, bio)
+            VALUES (?, ?, ?, ?, ?, ?)`,
+      args: ["huhu", null, passwordHash, "乎乎", "admin", "君说乎数字家园管理员"],
+    },
+  ], "write");
 }
 
 export async function seedCourses(): Promise<void> {

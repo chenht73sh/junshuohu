@@ -4,10 +4,20 @@ import { hashPassword, generateToken } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
+const VALID_INVITE_CODE = "junshuohu2026";
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { username, email, password, display_name } = body;
+    const { username, email, password, display_name, phone, invite_code } = body;
+
+    // Validate invite code
+    if (!invite_code || invite_code !== VALID_INVITE_CODE) {
+      return NextResponse.json(
+        { error: "邀请码不正确，如无邀请码请联系社群管理员获取" },
+        { status: 403 }
+      );
+    }
 
     // Validate required fields
     if (!username || !password || !display_name) {
@@ -70,9 +80,9 @@ export async function POST(request: NextRequest) {
     const passwordHash = hashPassword(password);
 
     const result = await db.execute({
-      sql: `INSERT INTO users (username, email, password_hash, display_name, role)
-            VALUES (?, ?, ?, ?, 'member')`,
-      args: [username, email || null, passwordHash, display_name],
+      sql: `INSERT INTO users (username, email, password_hash, display_name, phone, role)
+            VALUES (?, ?, ?, ?, ?, 'member')`,
+      args: [username, email || null, passwordHash, display_name, phone || null],
     });
 
     const userResult = await db.execute({

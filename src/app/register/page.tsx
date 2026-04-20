@@ -14,8 +14,10 @@ export default function RegisterPage() {
     username: "",
     display_name: "",
     email: "",
+    phone: "",
     password: "",
     confirmPassword: "",
+    invite_code: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -30,7 +32,7 @@ export default function RegisterPage() {
     setError("");
 
     // Client-side validation
-    if (!form.username.trim() || !form.display_name.trim() || !form.password) {
+    if (!form.username.trim() || !form.display_name.trim() || !form.password || !form.invite_code.trim()) {
       setError("请填写所有必填项");
       return;
     }
@@ -62,7 +64,9 @@ export default function RegisterPage() {
         username: form.username.trim(),
         display_name: form.display_name.trim(),
         email: form.email.trim(),
+        phone: form.phone.trim(),
         password: form.password,
+        invite_code: form.invite_code.trim(),
       });
       router.push("/");
     } catch (err) {
@@ -149,6 +153,43 @@ export default function RegisterPage() {
 
             <div>
               <label
+                htmlFor="phone"
+                className="block text-sm font-medium text-text-primary mb-1.5"
+              >
+                手机号
+              </label>
+              <input
+                id="phone"
+                type="tel"
+                value={form.phone}
+                onChange={(e) => updateField("phone", e.target.value)}
+                placeholder="选填，预留联系方式"
+                autoComplete="tel"
+                maxLength={20}
+                className="w-full px-4 py-3 bg-bg border border-border rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="invite_code"
+                className="block text-sm font-medium text-text-primary mb-1.5"
+              >
+                邀请码 <span className="text-error">*</span>
+              </label>
+              <input
+                id="invite_code"
+                type="text"
+                value={form.invite_code}
+                onChange={(e) => updateField("invite_code", e.target.value)}
+                placeholder="请输入邀请码（如无邀请码请联系社群管理员获取）"
+                maxLength={50}
+                className="w-full px-4 py-3 bg-bg border border-border rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
+              />
+            </div>
+
+            <div>
+              <label
                 htmlFor="password"
                 className="block text-sm font-medium text-text-primary mb-1.5"
               >
@@ -206,7 +247,8 @@ export default function RegisterPage() {
                 !form.username.trim() ||
                 !form.display_name.trim() ||
                 !form.password ||
-                !form.confirmPassword
+                !form.confirmPassword ||
+                !form.invite_code.trim()
               }
               className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary text-text-inverse font-medium rounded-lg hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >

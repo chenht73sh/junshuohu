@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
   { label: "首页", href: "/" },
-  { label: "社群板块", href: "/community" },
+  { label: "社群动态", href: "/community" },
   { label: "论坛公告", href: "/announcements" },
   { label: "活动档案", href: "/activities" },
   { label: "积分排行", href: "/leaderboard" },
