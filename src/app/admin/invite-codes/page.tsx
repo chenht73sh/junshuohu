@@ -33,7 +33,7 @@ export default function AdminInviteCodesPage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [maxUses, setMaxUses] = useState(1);
+  const [maxUses, setMaxUses] = useState(10);
   const [note, setNote] = useState("");
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [copySuccess, setCopySuccess] = useState<number | null>(null);

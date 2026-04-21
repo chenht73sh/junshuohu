@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     if (auth instanceof NextResponse) return auth;
 
     const body = await request.json();
-    const { max_uses = 1, note = null } = body;
+    const { max_uses = 10, note = null } = body;
 
     const db = await initializeDatabase();
 

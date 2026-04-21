@@ -250,7 +250,7 @@ async function migrateDatabase(): Promise<void> {
         code TEXT UNIQUE NOT NULL,
         created_by INTEGER NOT NULL,
         used_by INTEGER,
-        max_uses INTEGER NOT NULL DEFAULT 1,
+        max_uses INTEGER NOT NULL DEFAULT 10,
         used_count INTEGER NOT NULL DEFAULT 0,
         is_active INTEGER NOT NULL DEFAULT 1,
         note TEXT,
@@ -415,11 +415,11 @@ export async function seedInviteCodes(): Promise<void> {
       args: ["JSHU2026"],
     },
     {
-      sql: `INSERT OR IGNORE INTO invite_codes (code, created_by, max_uses, note) VALUES (?, 1, 5, '欢迎码1')`,
+      sql: `INSERT OR IGNORE INTO invite_codes (code, created_by, max_uses, note) VALUES (?, 1, 10, '欢迎码1')`,
       args: ["WELCOME1"],
     },
     {
-      sql: `INSERT OR IGNORE INTO invite_codes (code, created_by, max_uses, note) VALUES (?, 1, 5, '欢迎码2')`,
+      sql: `INSERT OR IGNORE INTO invite_codes (code, created_by, max_uses, note) VALUES (?, 1, 10, '欢迎码2')`,
       args: ["WELCOME2"],
     },
   ], "write");
