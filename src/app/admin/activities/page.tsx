@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Pencil, Trash2, Calendar, Users, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Trash2, Calendar, Users, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface Activity {
@@ -140,6 +140,47 @@ export default function AdminActivitiesPage() {
     }
   }
 
+  async function handleExport() {
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch("/api/admin/activities/export", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) { showToast("导出失败", "error"); return; }
+      const data = await res.json();
+      const participants = data.participants || [];
+      const BOM = "\uFEFF";
+      const header = ["活动名称", "主讲人", "活动日期", "地点", "用户名", "显示名", "手机号", "邮箱", "是否签到", "报名时间"];
+      const rows = participants.map((p: Record<string, string | number | null>) => [
+        p.activity_title || "",
+        p.speaker || "",
+        p.activity_date || "",
+        p.location || "",
+        p.username || "",
+        p.display_name || "",
+        p.phone || "",
+        p.email || "",
+        p.signed_in ? "已签到" : "未签到",
+        p.join_time ? new Date(p.join_time as string).toLocaleDateString("zh-CN", {
+          year: "numeric", month: "2-digit", day: "2-digit",
+          hour: "2-digit", minute: "2-digit",
+        }) : "",
+      ]);
+      const csv = [header, ...rows]
+        .map((r: string[]) => r.map((c: string) => `"${c.replace(/"/g, '""')}"`).join(","))
+        .join("\n");
+      const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `君说乎活动报名信息_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      showToast("导出失败，请重试", "error");
+    }
+  }
+
   return (
     <div>
       {toast && (
@@ -155,12 +196,21 @@ export default function AdminActivitiesPage() {
           <h1 className="text-xl font-semibold text-text-primary">活动管理</h1>
           <p className="text-sm text-text-muted mt-0.5">共 {pagination.total} 个活动</p>
         </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-text-inverse rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
-        >
-          <Plus size={16} /> 新建活动
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm rounded-lg hover:bg-primary-dark transition-colors"
+          >
+            <Download size={15} />
+            导出报名信息
+          </button>
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-text-inverse rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
+          >
+            <Plus size={16} /> 新建活动
+          </button>
+        </div>
       </div>
 
       {/* Form modal */}

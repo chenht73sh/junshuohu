@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Plus, Trash2, Edit2, X, Lock } from "lucide-react";
+import { Plus, Trash2, Edit2, X, Lock, Download } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface CourseItem {
@@ -204,6 +204,42 @@ export default function AdminCoursesPage() {
     });
   }
 
+  async function handleExport() {
+    if (!token) return;
+    try {
+      const res = await fetch("/api/admin/courses/export", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) { alert("导出失败"); return; }
+      const data = await res.json();
+      const enrollments = data.enrollments || [];
+      const BOM = "\uFEFF";
+      const header = ["课程名称", "讲师", "开课时间", "用户名", "显示名", "手机号", "邮箱", "报名时间"];
+      const rows = enrollments.map((e: Record<string, string | null>) => [
+        e.course_title || "",
+        e.instructor || "",
+        e.start_time ? formatDate(e.start_time) : "",
+        e.username || "",
+        e.display_name || "",
+        e.phone || "",
+        e.email || "",
+        e.enroll_time ? formatDate(e.enroll_time) : "",
+      ]);
+      const csv = [header, ...rows]
+        .map((r) => r.map((c: string) => `"${c.replace(/"/g, '""')}"`).join(","))
+        .join("\n");
+      const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `君说乎课程报名信息_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("导出失败，请重试");
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -217,13 +253,22 @@ export default function AdminCoursesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="font-serif text-2xl font-semibold text-text-primary">课程管理</h1>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-text-inverse bg-primary hover:bg-primary-dark rounded-lg transition-colors"
-        >
-          <Plus size={16} />
-          创建新课程
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm rounded-lg hover:bg-primary-dark transition-colors"
+          >
+            <Download size={15} />
+            导出报名信息
+          </button>
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-text-inverse bg-primary hover:bg-primary-dark rounded-lg transition-colors"
+          >
+            <Plus size={16} />
+            创建新课程
+          </button>
+        </div>
       </div>
 
       {courses.length === 0 ? (
