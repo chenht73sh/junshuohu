@@ -5,15 +5,21 @@ import { useState, useRef, useEffect } from "react";
 import { Menu, X, User, LogOut, ChevronDown, Shield } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
-const navItems = [
-  { label: "首页", href: "/" },
-  { label: "社群动态", href: "/community" },
-  { label: "社群板块", href: "/categories" },
-  { label: "课程报名", href: "/courses" },
-  { label: "论坛公告", href: "/announcements" },
-  { label: "活动档案", href: "/activities" },
-  { label: "积分排行", href: "/leaderboard" },
-  { label: "关于我们", href: "/about" },
+interface NavItem {
+  label: string;
+  href: string;
+  visible: boolean;
+}
+
+const defaultNavItems: NavItem[] = [
+  { label: "首页", href: "/", visible: true },
+  { label: "社群动态", href: "/community", visible: true },
+  { label: "社群板块", href: "/categories", visible: true },
+  { label: "课程报名", href: "/courses", visible: true },
+  { label: "论坛公告", href: "/announcements", visible: true },
+  { label: "活动档案", href: "/activities", visible: true },
+  { label: "积分排行", href: "/leaderboard", visible: true },
+  { label: "关于我们", href: "/about", visible: true },
 ];
 
 export default function Header() {
@@ -21,6 +27,23 @@ export default function Header() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user, loading, logout } = useAuth();
+  const [navItems, setNavItems] = useState<NavItem[]>(defaultNavItems);
+
+  // Fetch nav menu from API
+  useEffect(() => {
+    fetch("/api/settings?key=nav_menu")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.settings?.nav_menu && Array.isArray(data.settings.nav_menu)) {
+          setNavItems(data.settings.nav_menu);
+        }
+      })
+      .catch(() => {
+        // Keep default nav items on error
+      });
+  }, []);
+
+  const visibleNavItems = navItems.filter((item) => item.visible);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -56,7 +79,7 @@ export default function Header() {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => (
+            {visibleNavItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -162,7 +185,7 @@ export default function Header() {
       {mobileOpen && (
         <div className="md:hidden border-t border-border bg-surface">
           <nav className="px-4 py-3 space-y-1">
-            {navItems.map((item) => (
+            {visibleNavItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}

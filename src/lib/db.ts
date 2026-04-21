@@ -261,6 +261,14 @@ async function migrateDatabase(): Promise<void> {
       )`,
       args: [],
     },
+    {
+      sql: `CREATE TABLE IF NOT EXISTS site_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+      args: [],
+    },
   ], "write");
 
   // Add total_points column to users if it doesn't exist (idempotent via try/catch)
@@ -425,8 +433,66 @@ export async function seedInviteCodes(): Promise<void> {
   ], "write");
 }
 
+export async function seedSiteSettings(): Promise<void> {
+  const navMenu = JSON.stringify([
+    { label: "首页", href: "/", visible: true },
+    { label: "社群动态", href: "/community", visible: true },
+    { label: "社群板块", href: "/categories", visible: true },
+    { label: "课程报名", href: "/courses", visible: true },
+    { label: "论坛公告", href: "/announcements", visible: true },
+    { label: "活动档案", href: "/activities", visible: true },
+    { label: "积分排行", href: "/leaderboard", visible: true },
+    { label: "关于我们", href: "/about", visible: true },
+  ]);
+
+  const heroContent = JSON.stringify({
+    site_name: "君说乎",
+    subtitle: "数字家园",
+    description: "这里是一群都市人的精神自留地。我们相信，真正的富足，不是物质的堆砌，而是灵魂的丰盈。",
+    cta_text: "加入君说乎，遇见同频的灵魂",
+    cta_button: "立即加入",
+  });
+
+  const aboutContent = JSON.stringify({
+    title: "关于我们",
+    intro: "学而时习之，不亦说乎？有朋自远方来，不亦乐乎？人不知而不愠，不亦君子乎？",
+    mission: `君说乎之名，源自《论语》\u201c学而时习之，不亦说乎？有朋自远方来，不亦乐乎？人不知而不愠，不亦君子乎？\u201d。自诞生之初，社群便以\u201c学习是快乐的，相遇是幸运的，彼此理解是珍贵的\u201d为初心，致力于打破流量时代功利性社交的壁垒，打造一个无阶层、无壁垒、有温度、有价值的同频人成长共同体。\n\n社群以\u201c自立利他\u201d为灵魂，拒绝流量堆砌、摒弃短期变现逻辑，坚信真正的社群是灵魂的同频、双向的奔赴、长期的共生，最终目标是成为都市人可卸下铠甲、真实面对自我、精准链接同频者的\u201c精神家园\u201d。`,
+    values: ["真诚链接", "同频成长", "双向奔赴", "价值共建"],
+    history: `从最初一张咖啡桌旁十个人的小沙龙起步，君说乎已走过十年发展历程，累计举办近500场线上线下学习沙龙、课程与活动，覆盖法律、心理、教育、管理、健康、艺术、传统文化等多元领域，沉淀了一批有才华、有匠心的讲师团队，以及数千名热爱学习、认同社群理念的社群成员。\n\n十年间，社群经历了从初创到2019年三年的辉煌，也走过疫情期间的停摆与重启，始终坚守长期主义，完成了从\u201c单一活动社群\u201d到\u201c体系化成长生态\u201d的升级，形成了独特的社群文化——\u201c一群人学习一群人，一群人服务一群人，一群人帮助一群人。\u201d`,
+    team: `社群核心用户为30-60岁群体，以70后、80后、90后为主体，包括创业者、自由职业者、企业中高管、公务员、教师等各界精英。区别于传统社群以\u201c知识输出\u201d为单一价值的模式，君说乎以\u201c情感链接＋确定性支持\u201d为核心价值，不仅解决用户的认知提升问题，更承接都市成年人的情绪内耗、孤独感、成长焦虑等底层需求，打造一个\u201c允许你不完美，只管真实\u201d的安全社交空间。`,
+  });
+
+  const footerContent = JSON.stringify({
+    slogan: "都市人的精神自留地",
+    values: ["真诚链接", "同频成长", "双向奔赴", "价值共建"],
+    copyright: "© 2026 君说乎 · 数字家园。用温暖连接每一颗有趣的灵魂。",
+    links: [
+      { label: "社群板块", href: "/categories" },
+      { label: "课程报名", href: "/courses" },
+      { label: "关于我们", href: "/about" },
+    ],
+  });
+
+  const contactInfo = JSON.stringify({
+    wechat: "",
+    email: "",
+    phone: "",
+    address: "",
+    wechat_qrcode: "",
+    custom_fields: [],
+  });
+
+  await db.batch([
+    { sql: "INSERT OR IGNORE INTO site_settings (key, value) VALUES (?, ?)", args: ["nav_menu", navMenu] },
+    { sql: "INSERT OR IGNORE INTO site_settings (key, value) VALUES (?, ?)", args: ["hero_content", heroContent] },
+    { sql: "INSERT OR IGNORE INTO site_settings (key, value) VALUES (?, ?)", args: ["about_content", aboutContent] },
+    { sql: "INSERT OR IGNORE INTO site_settings (key, value) VALUES (?, ?)", args: ["footer_content", footerContent] },
+    { sql: "INSERT OR IGNORE INTO site_settings (key, value) VALUES (?, ?)", args: ["contact_info", contactInfo] },
+  ], "write");
+}
+
 /**
- * Initialize the database: create tables, seed categories, admin, courses & invite codes.
+ * Initialize the database: create tables, seed categories, admin, courses, invite codes & site settings.
  * Safe to call multiple times — all operations are idempotent.
  */
 export async function initializeDatabase(): Promise<Client> {
@@ -435,5 +501,6 @@ export async function initializeDatabase(): Promise<Client> {
   await seedAdmin();
   await seedCourses();
   await seedInviteCodes();
+  await seedSiteSettings();
   return database;
 }

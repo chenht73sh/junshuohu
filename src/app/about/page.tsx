@@ -1,12 +1,45 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { useEffect, useState } from "react";
 
-export const metadata = {
-  title: "关于我们 — 君说乎",
-  description: "了解君说乎社群的缘起、理念、十年发展历程与核心定位。",
+interface AboutContent {
+  title: string;
+  intro: string;
+  mission: string;
+  values: string[];
+  history: string;
+  team: string;
+}
+
+const defaultAbout: AboutContent = {
+  title: "关于我们",
+  intro: "学而时习之，不亦说乎？有朋自远方来，不亦乐乎？人不知而不愠，不亦君子乎？",
+  mission:
+    `君说乎之名，源自《论语》\u201c学而时习之，不亦说乎？有朋自远方来，不亦乐乎？人不知而不愠，不亦君子乎？\u201d。自诞生之初，社群便以\u201c学习是快乐的，相遇是幸运的，彼此理解是珍贵的\u201d为初心，致力于打破流量时代功利性社交的壁垒，打造一个无阶层、无壁垒、有温度、有价值的同频人成长共同体。\n\n社群以\u201c自立利他\u201d为灵魂，拒绝流量堆砌、摒弃短期变现逻辑，坚信真正的社群是灵魂的同频、双向的奔赴、长期的共生，最终目标是成为都市人可卸下铠甲、真实面对自我、精准链接同频者的\u201c精神家园\u201d。`,
+  values: ["真诚链接", "同频成长", "双向奔赴", "价值共建"],
+  history:
+    `从最初一张咖啡桌旁十个人的小沙龙起步，君说乎已走过十年发展历程，累计举办近500场线上线下学习沙龙、课程与活动，覆盖法律、心理、教育、管理、健康、艺术、传统文化等多元领域，沉淀了一批有才华、有匠心的讲师团队，以及数千名热爱学习、认同社群理念的社群成员。\n\n十年间，社群经历了从初创到2019年三年的辉煌，也走过疫情期间的停摆与重启，始终坚守长期主义，完成了从\u201c单一活动社群\u201d到\u201c体系化成长生态\u201d的升级，形成了独特的社群文化——\u201c一群人学习一群人，一群人服务一群人，一群人帮助一群人。\u201d`,
+  team: `社群核心用户为30-60岁群体，以70后、80后、90后为主体，包括创业者、自由职业者、企业中高管、公务员、教师等各界精英。区别于传统社群以\u201c知识输出\u201d为单一价值的模式，君说乎以\u201c情感链接＋确定性支持\u201d为核心价值，不仅解决用户的认知提升问题，更承接都市成年人的情绪内耗、孤独感、成长焦虑等底层需求，打造一个\u201c允许你不完美，只管真实\u201d的安全社交空间。`,
 };
 
 export default function AboutPage() {
+  const [about, setAbout] = useState<AboutContent>(defaultAbout);
+
+  useEffect(() => {
+    fetch("/api/settings?key=about_content")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.settings?.about_content) {
+          setAbout(data.settings.about_content);
+        }
+      })
+      .catch(() => {
+        // Keep defaults
+      });
+  }, []);
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
       {/* Breadcrumb */}
@@ -21,12 +54,10 @@ export default function AboutPage() {
       {/* Page header */}
       <div className="text-center mb-14">
         <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
-          关于我们
+          {about.title}
         </h1>
         <p className="font-serif text-lg sm:text-xl text-text-secondary leading-relaxed max-w-2xl mx-auto">
-          学而时习之，不亦说乎？有朋自远方来，不亦乐乎？
-          <br className="hidden sm:block" />
-          人不知而不愠，不亦君子乎？
+          {about.intro}
         </p>
         <div className="mt-4 w-16 h-0.5 bg-primary/40 mx-auto rounded-full" />
       </div>
@@ -47,7 +78,7 @@ export default function AboutPage() {
               核心理念
             </h3>
             <div className="flex flex-wrap gap-3">
-              {["真诚链接", "同频成长", "双向奔赴", "价值共建"].map((item) => (
+              {about.values.map((item) => (
                 <span
                   key={item}
                   className="px-4 py-2 rounded-full text-sm font-medium bg-primary/10 text-primary border border-primary/20"
@@ -118,19 +149,15 @@ export default function AboutPage() {
         <div className="card p-6 sm:p-8 space-y-5">
           <blockquote className="border-l-4 border-primary/40 pl-5 py-2 bg-accent-light/30 rounded-r-lg">
             <p className="font-serif text-text-secondary italic leading-relaxed">
-              "学习是快乐的，相遇是幸运的，彼此理解是珍贵的。"
+              &quot;学习是快乐的，相遇是幸运的，彼此理解是珍贵的。&quot;
             </p>
           </blockquote>
 
-          <p className="text-text-secondary leading-loose">
-            君说乎之名，源自《论语》
-            <span className="font-serif text-primary">"学而时习之，不亦说乎？有朋自远方来，不亦乐乎？人不知而不愠，不亦君子乎？"</span>
-            。自诞生之初，社群便以"学习是快乐的，相遇是幸运的，彼此理解是珍贵的"为初心，致力于打破流量时代功利性社交的壁垒，打造一个<strong>无阶层、无壁垒、有温度、有价值</strong>的同频人成长共同体。
-          </p>
-
-          <p className="text-text-secondary leading-loose">
-            社群以<strong>"自立利他"</strong>为灵魂，拒绝流量堆砌、摒弃短期变现逻辑，坚信真正的社群是灵魂的同频、双向的奔赴、长期的共生，最终目标是成为都市人可卸下铠甲、真实面对自我、精准链接同频者的<span className="font-semibold text-primary">"精神家园"</span>。
-          </p>
+          {about.mission.split("\n\n").map((paragraph, i) => (
+            <p key={i} className="text-text-secondary leading-loose">
+              {paragraph}
+            </p>
+          ))}
         </div>
       </section>
 
@@ -159,19 +186,11 @@ export default function AboutPage() {
             ))}
           </div>
 
-          <p className="text-text-secondary leading-loose">
-            从最初一张咖啡桌旁十个人的小沙龙起步，君说乎已走过十年发展历程，累计举办近<strong>500场</strong>线上线下学习沙龙、课程与活动，覆盖法律、心理、教育、管理、健康、艺术、传统文化等多元领域，沉淀了一批有才华、有匠心的讲师团队，以及数千名热爱学习、认同社群理念的社群成员。
-          </p>
-
-          <p className="text-text-secondary leading-loose">
-            十年间，社群经历了从初创到2019年三年的辉煌，也走过疫情期间的停摆与重启，始终坚守<strong>长期主义</strong>，完成了从"单一活动社群"到"体系化成长生态"的升级，形成了独特的社群文化——
-          </p>
-
-          <blockquote className="border-l-4 border-primary/40 pl-5 py-3 bg-accent-light/30 rounded-r-lg">
-            <p className="font-serif text-text-primary leading-relaxed text-lg">
-              "一群人学习一群人，一群人服务一群人，一群人帮助一群人。"
+          {about.history.split("\n\n").map((paragraph, i) => (
+            <p key={i} className="text-text-secondary leading-loose">
+              {paragraph}
             </p>
-          </blockquote>
+          ))}
         </div>
       </section>
 
@@ -185,41 +204,13 @@ export default function AboutPage() {
         </div>
 
         <div className="space-y-6">
-          {/* 差异化核心定位 */}
+          {/* Team / user portrait */}
           <div className="card p-6 sm:p-8">
-            <h3 className="font-serif text-lg sm:text-xl font-bold text-text-primary mb-4 flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold">一</span>
-              差异化核心定位
-            </h3>
-            <p className="text-text-secondary leading-loose">
-              区别于传统社群以"知识输出"为单一价值的模式，君说乎以<strong className="text-primary">"情感链接＋确定性支持"</strong>为核心价值，不仅解决用户的认知提升问题，更承接都市成年人的情绪内耗、孤独感、成长焦虑等底层需求，打造一个——
-            </p>
-            <div className="mt-4 p-4 rounded-xl bg-primary/5 border border-primary/15 text-center">
-              <p className="font-serif text-lg text-primary font-medium">
-                "允许你不完美，只管真实"的安全社交空间
+            {about.team.split("\n\n").map((paragraph, i) => (
+              <p key={i} className="text-text-secondary leading-loose mb-4 last:mb-0">
+                {paragraph}
               </p>
-            </div>
-          </div>
-
-          {/* 核心用户画像 */}
-          <div className="card p-6 sm:p-8">
-            <h3 className="font-serif text-lg sm:text-xl font-bold text-text-primary mb-4 flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold">二</span>
-              核心用户画像
-            </h3>
-            <p className="text-text-secondary leading-loose mb-4">
-              社群核心用户为<strong>30-60岁</strong>群体，以70后、80后、90后为主体。
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {["创业者", "自由职业者", "企业中高管", "公务员", "教师"].map((role) => (
-                <span
-                  key={role}
-                  className="px-3 py-1.5 text-sm rounded-lg bg-secondary/10 text-secondary border border-secondary/20"
-                >
-                  {role}
-                </span>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
       </section>

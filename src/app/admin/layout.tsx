@@ -12,6 +12,7 @@ import {
   Megaphone,
   Calendar,
   KeyRound,
+  Settings,
   Menu,
   X,
   Shield,
@@ -27,6 +28,7 @@ const sidebarItems = [
   { label: "公告管理", href: "/admin/announcements", icon: Megaphone },
   { label: "课程管理", href: "/admin/courses", icon: BookOpen },
   { label: "活动管理", href: "/admin/activities", icon: Calendar },
+  { label: "站点设置", href: "/admin/settings", icon: Settings },
 ];
 
 export default function AdminLayout({

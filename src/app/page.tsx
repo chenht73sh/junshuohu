@@ -52,8 +52,38 @@ function formatAnnouncementDate(dateStr: string): string {
   });
 }
 
+interface HeroContent {
+  site_name: string;
+  subtitle: string;
+  description: string;
+  cta_text: string;
+  cta_button: string;
+}
+
+const defaultHero: HeroContent = {
+  site_name: "君说乎",
+  subtitle: "数字家园",
+  description: "这里是一群都市人的精神自留地。我们相信，真正的富足，不是物质的堆砌，而是灵魂的丰盈。",
+  cta_text: "加入君说乎，遇见同频的灵魂",
+  cta_button: "立即加入",
+};
+
 export default async function HomePage() {
   const db = await initializeDatabase();
+
+  // Read hero_content from site_settings
+  let hero: HeroContent = defaultHero;
+  try {
+    const heroResult = await db.execute({
+      sql: "SELECT value FROM site_settings WHERE key = ?",
+      args: ["hero_content"],
+    });
+    if (heroResult.rows.length > 0) {
+      hero = JSON.parse(heroResult.rows[0].value as string);
+    }
+  } catch {
+    // Use default hero content on error
+  }
 
   const categoriesResult = await db.execute({
     sql: `SELECT c.*, 
@@ -104,7 +134,7 @@ export default async function HomePage() {
         <div className="gradient-warm py-20 sm:py-28">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
             <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold text-text-inverse mb-4 tracking-wide">
-              君说乎
+              {hero.site_name}
             </h1>
             <div className="font-serif text-lg sm:text-xl text-text-inverse/80 mb-6 space-y-2">
               <p className="tracking-widest">学而时习之，不亦说乎？</p>
@@ -113,9 +143,7 @@ export default async function HomePage() {
               <p className="mt-3 text-sm sm:text-base text-text-inverse/50 tracking-wide">——《论语·学而》</p>
             </div>
             <p className="max-w-2xl mx-auto text-base sm:text-lg text-text-inverse/70 leading-relaxed mb-10">
-              这里是一群都市人的精神自留地。我们相信，真正的富足，
-              不在物质的丰盈，而在灵魂的丰盛。在这里，你会遇见同频的灵魂，
-              一起学习、成长、创造属于我们的精神家园。
+              {hero.description}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link
@@ -355,7 +383,7 @@ export default async function HomePage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <div className="gradient-accent rounded-2xl p-10 sm:p-14">
             <h2 className="font-serif text-2xl sm:text-3xl font-bold mb-4">
-              加入君说乎，遇见同频的灵魂
+              {hero.cta_text}
             </h2>
             <p className="text-text-secondary mb-8 max-w-lg mx-auto">
               无论你热爱AI科技、艺术人文、健康养生，还是户外运动，
@@ -365,7 +393,7 @@ export default async function HomePage() {
               href="/register"
               className="inline-block px-8 py-3 bg-primary text-text-inverse font-medium rounded-xl hover:bg-primary-dark transition-colors"
             >
-              立即加入
+              {hero.cta_button}
             </Link>
           </div>
         </div>
