@@ -12,6 +12,8 @@ import {
   XCircle,
   Loader2,
   Clock,
+  Share2,
+  Check,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -50,6 +52,15 @@ export default function CourseDetailPage() {
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
   const [countdown, setCountdown] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  function handleCopyLink() {
+    const url = `${window.location.origin}/courses/${courseId}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
 
   useEffect(() => {
     async function fetchData() {
@@ -244,9 +255,19 @@ export default function CourseDetailPage() {
                 )}
               </div>
 
-              <h1 className="font-serif text-2xl sm:text-3xl font-bold text-text-primary mb-4">
-                {course.title}
-              </h1>
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <h1 className="font-serif text-2xl sm:text-3xl font-bold text-text-primary">
+                  {course.title}
+                </h1>
+                <button
+                  onClick={handleCopyLink}
+                  className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-border hover:bg-primary/5 hover:border-primary/30 transition-colors text-text-secondary hover:text-primary"
+                  title="复制报名链接"
+                >
+                  {copied ? <Check size={14} className="text-success" /> : <Share2 size={14} />}
+                  {copied ? "已复制" : "分享链接"}
+                </button>
+              </div>
 
               {course.description && (
                 <p className="text-text-secondary leading-relaxed mb-6 prose-warm">
