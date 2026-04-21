@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, Download } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface UserItem {
   id: number;
   username: string;
   email: string | null;
+  phone: string | null;
   display_name: string;
   role: string;
+  total_points: number;
   created_at: string;
 }
 
@@ -103,6 +105,28 @@ export default function AdminUsersPage() {
     });
   }
 
+  function handleExport() {
+    const BOM = "\uFEFF";
+    const header = ["用户名", "显示名", "邮箱", "手机号", "角色", "积分", "注册时间"];
+    const rows = users.map((u) => [
+      u.username,
+      u.display_name,
+      u.email || "",
+      u.phone || "",
+      roleLabels[u.role] || u.role,
+      String(u.total_points ?? 0),
+      formatDate(u.created_at),
+    ]);
+    const csv = [header, ...rows].map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `君说乎用户信息_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -114,9 +138,18 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="font-serif text-2xl font-semibold text-text-primary">用户管理</h1>
-        <span className="text-sm text-text-muted">共 {users.length} 位用户</span>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="font-serif text-2xl font-semibold text-text-primary">用户管理</h1>
+          <span className="text-sm text-text-muted">共 {users.length} 位用户</span>
+        </div>
+        <button
+          onClick={handleExport}
+          className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm rounded-lg hover:bg-primary-dark transition-colors"
+        >
+          <Download size={15} />
+          导出用户信息
+        </button>
       </div>
 
       {/* Desktop table */}
@@ -126,6 +159,7 @@ export default function AdminUsersPage() {
             <thead>
               <tr className="bg-accent-light/30 border-b border-border">
                 <th className="text-left px-5 py-3 font-medium text-text-secondary">用户名</th>
+                <th className="text-left px-5 py-3 font-medium text-text-secondary">手机号</th>
                 <th className="text-left px-5 py-3 font-medium text-text-secondary">邮箱</th>
                 <th className="text-left px-5 py-3 font-medium text-text-secondary">角色</th>
                 <th className="text-left px-5 py-3 font-medium text-text-secondary">注册时间</th>
@@ -153,6 +187,7 @@ export default function AdminUsersPage() {
                         </div>
                       </div>
                     </td>
+                    <td className="px-5 py-3 text-text-secondary">{u.phone || "—"}</td>
                     <td className="px-5 py-3 text-text-secondary">{u.email || "—"}</td>
                     <td className="px-5 py-3">
                       {currentUser?.role === "admin" && !isSelf ? (
@@ -229,6 +264,7 @@ export default function AdminUsersPage() {
               </div>
 
               <div className="text-xs text-text-muted space-y-1">
+                <p>手机：{u.phone || "—"}</p>
                 <p>邮箱：{u.email || "—"}</p>
                 <p>注册时间：{formatDate(u.created_at)}</p>
               </div>
