@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Trash2, Download } from "lucide-react";
+import { Trash2, Download, KeyRound } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface UserItem {
@@ -32,6 +32,39 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [resetTarget, setResetTarget] = useState<{ id: number; name: string } | null>(null);
+  const [newPwd, setNewPwd] = useState("");
+  const [confirmPwd, setConfirmPwd] = useState("");
+  const [resetSaving, setResetSaving] = useState(false);
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+
+  function showToast(msg: string, ok = true) {
+    setToast({ msg, ok });
+    setTimeout(() => setToast(null), 3000);
+  }
+
+  async function handleResetPassword() {
+    if (!newPwd || newPwd.length < 8) { showToast("新密码至少8位", false); return; }
+    if (newPwd !== confirmPwd) { showToast("两次密码不一致", false); return; }
+    if (!resetTarget || !token) return;
+    setResetSaving(true);
+    try {
+      const res = await fetch(`/api/users/${resetTarget.id}/password`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ new_password: newPwd }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(`已重置「${resetTarget.name}」的密码`);
+        setResetTarget(null);
+        setNewPwd(""); setConfirmPwd("");
+      } else {
+        showToast(data.error || "重置失败", false);
+      }
+    } catch { showToast("网络错误", false); }
+    finally { setResetSaving(false); }
+  }
 
   const fetchUsers = useCallback(() => {
     if (!token) return;
@@ -214,15 +247,27 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-5 py-3 text-text-muted">{formatDate(u.created_at)}</td>
                     <td className="px-5 py-3 text-right">
-                      {currentUser?.role === "admin" && !isSelf && (
-                        <button
-                          onClick={() => handleDelete(u.id, u.display_name)}
-                          disabled={actionLoading === u.id}
-                          className="p-1.5 text-text-muted hover:text-error hover:bg-error/5 rounded-lg transition-colors disabled:opacity-40"
-                          title="删除用户"
-                        >
-                          <Trash2 size={15} />
-                        </button>
+                      {currentUser?.role === "admin" && (
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => { setResetTarget({ id: u.id, name: u.display_name }); setNewPwd(""); setConfirmPwd(""); }}
+                            disabled={actionLoading === u.id}
+                            className="p-1.5 text-text-muted hover:text-primary hover:bg-primary/5 rounded-lg transition-colors disabled:opacity-40"
+                            title="重置密码"
+                          >
+                            <KeyRound size={15} />
+                          </button>
+                          {!isSelf && (
+                            <button
+                              onClick={() => handleDelete(u.id, u.display_name)}
+                              disabled={actionLoading === u.id}
+                              className="p-1.5 text-text-muted hover:text-error hover:bg-error/5 rounded-lg transition-colors disabled:opacity-40"
+                              title="删除用户"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          )}
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -269,33 +314,94 @@ export default function AdminUsersPage() {
                 <p>注册时间：{formatDate(u.created_at)}</p>
               </div>
 
-              {currentUser?.role === "admin" && !isSelf && (
+              {currentUser?.role === "admin" && (
                 <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border-light">
-                  <select
-                    value={u.role}
-                    onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                    disabled={actionLoading === u.id}
-                    className="flex-1 px-2 py-1.5 rounded-lg text-xs border border-border bg-surface focus:outline-none focus:border-primary"
-                  >
-                    {roleOptions.map((r) => (
-                      <option key={r} value={r}>
-                        {roleLabels[r]}
-                      </option>
-                    ))}
-                  </select>
+                  {!isSelf && (
+                    <select
+                      value={u.role}
+                      onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                      disabled={actionLoading === u.id}
+                      className="flex-1 px-2 py-1.5 rounded-lg text-xs border border-border bg-surface focus:outline-none focus:border-primary"
+                    >
+                      {roleOptions.map((r) => (
+                        <option key={r} value={r}>{roleLabels[r]}</option>
+                      ))}
+                    </select>
+                  )}
                   <button
-                    onClick={() => handleDelete(u.id, u.display_name)}
+                    onClick={() => { setResetTarget({ id: u.id, name: u.display_name }); setNewPwd(""); setConfirmPwd(""); }}
                     disabled={actionLoading === u.id}
-                    className="px-3 py-1.5 text-xs text-error border border-error/20 rounded-lg hover:bg-error/5 transition-colors disabled:opacity-40"
+                    className="px-3 py-1.5 text-xs text-primary border border-primary/20 rounded-lg hover:bg-primary/5 transition-colors disabled:opacity-40"
                   >
-                    删除
+                    重置密码
                   </button>
+                  {!isSelf && (
+                    <button
+                      onClick={() => handleDelete(u.id, u.display_name)}
+                      disabled={actionLoading === u.id}
+                      className="px-3 py-1.5 text-xs text-error border border-error/20 rounded-lg hover:bg-error/5 transition-colors disabled:opacity-40"
+                    >
+                      删除
+                    </button>
+                  )}
                 </div>
               )}
             </div>
           );
         })}
       </div>
+
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-xl shadow-float text-sm font-medium ${toast.ok ? "bg-green-600 text-white" : "bg-red-600 text-white"}`}>
+          {toast.msg}
+        </div>
+      )}
+
+      {/* 重置密码弹窗 */}
+      {resetTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setResetTarget(null)}>
+          <div className="bg-surface rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-serif text-lg font-semibold text-text-primary mb-1">🔑 重置密码</h3>
+            <p className="text-sm text-text-muted mb-5">为「{resetTarget.name}」设置新密码</p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1">新密码</label>
+                <input
+                  type="password"
+                  value={newPwd}
+                  onChange={(e) => setNewPwd(e.target.value)}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  placeholder="至少8位"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1">确认新密码</label>
+                <input
+                  type="password"
+                  value={confirmPwd}
+                  onChange={(e) => setConfirmPwd(e.target.value)}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  placeholder="再输入一次"
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 mt-6">
+              <button onClick={() => setResetTarget(null)} className="px-4 py-2 text-sm text-text-secondary hover:text-text-primary transition-colors">
+                取消
+              </button>
+              <button
+                onClick={handleResetPassword}
+                disabled={resetSaving}
+                className="px-5 py-2 text-sm bg-primary text-text-inverse rounded-lg hover:bg-primary-dark disabled:opacity-50 transition-colors"
+              >
+                {resetSaving ? "重置中…" : "确认重置"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
