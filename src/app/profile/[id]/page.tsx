@@ -147,6 +147,9 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   const [editForm, setEditForm] = useState({ display_name: "", bio: "", interests: "", expertise: "" });
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+  const [showPwdModal, setShowPwdModal] = useState(false);
+  const [pwdForm, setPwdForm] = useState({ current: "", next: "", confirm: "" });
+  const [pwdSaving, setPwdSaving] = useState(false);
 
   const isSelf = user && user.id === parseInt(id, 10);
 
@@ -209,6 +212,34 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
     }
   }
 
+  async function handleChangePassword() {
+    if (!pwdForm.next || pwdForm.next.length < 8) {
+      showToast("新密码至少需要8位", "error"); return;
+    }
+    if (pwdForm.next !== pwdForm.confirm) {
+      showToast("两次输入的新密码不一致", "error"); return;
+    }
+    setPwdSaving(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/users/${id}/password`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ current_password: pwdForm.current, new_password: pwdForm.next }),
+      });
+      const d = await res.json();
+      if (res.ok) {
+        showToast("密码修改成功", "success");
+        setShowPwdModal(false);
+        setPwdForm({ current: "", next: "", confirm: "" });
+      } else {
+        showToast(d.error || "修改失败", "error");
+      }
+    } finally {
+      setPwdSaving(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 flex items-center justify-center">
@@ -267,12 +298,20 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
               )}
             </div>
             {isSelf && (
-              <button
-                onClick={() => setEditing(true)}
-                className="flex items-center gap-1.5 px-4 py-2 bg-white/20 hover:bg-white/30 text-text-inverse rounded-lg text-sm transition-colors"
-              >
-                <Pencil size={14} /> 编辑档案
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setEditing(true)}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-white/20 hover:bg-white/30 text-text-inverse rounded-lg text-sm transition-colors"
+                >
+                  <Pencil size={14} /> 编辑档案
+                </button>
+                <button
+                  onClick={() => setShowPwdModal(true)}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-white/20 hover:bg-white/30 text-text-inverse rounded-lg text-sm transition-colors"
+                >
+                  🔒 修改密码
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -441,6 +480,60 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                 className="px-4 py-2 text-sm bg-primary text-text-inverse rounded-lg hover:bg-primary-dark disabled:opacity-50 transition-colors"
               >
                 {saving ? "保存中…" : "保存"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 修改密码弹窗 */}
+      {showPwdModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowPwdModal(false)}>
+          <div className="bg-surface rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-serif text-lg font-semibold text-text-primary mb-5">🔒 修改密码</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1">当前密码</label>
+                <input
+                  type="password"
+                  value={pwdForm.current}
+                  onChange={(e) => setPwdForm((f) => ({ ...f, current: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  placeholder="请输入当前密码"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1">新密码</label>
+                <input
+                  type="password"
+                  value={pwdForm.next}
+                  onChange={(e) => setPwdForm((f) => ({ ...f, next: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  placeholder="至少8位"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1">确认新密码</label>
+                <input
+                  type="password"
+                  value={pwdForm.confirm}
+                  onChange={(e) => setPwdForm((f) => ({ ...f, confirm: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-white focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  placeholder="再输入一次新密码"
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 mt-6">
+              <button onClick={() => { setShowPwdModal(false); setPwdForm({ current: "", next: "", confirm: "" }); }}
+                className="px-4 py-2 text-sm text-text-secondary hover:text-text-primary transition-colors">
+                取消
+              </button>
+              <button
+                onClick={handleChangePassword}
+                disabled={pwdSaving}
+                className="px-5 py-2 text-sm bg-primary text-text-inverse rounded-lg hover:bg-primary-dark disabled:opacity-50 transition-colors"
+              >
+                {pwdSaving ? "修改中…" : "确认修改"}
               </button>
             </div>
           </div>
