@@ -76,6 +76,16 @@ export async function POST(
 
     const db = await initializeDatabase();
 
+    // 评论频率限制：1分钟内不超过5条
+    const oneMinAgo = new Date(Date.now() - 60_000).toISOString();
+    const recentComments = await db.execute({
+      sql: "SELECT COUNT(*) as cnt FROM comments WHERE author_id = ? AND created_at > ?",
+      args: [payload.userId, oneMinAgo],
+    });
+    if ((recentComments.rows[0].cnt as number) >= 5) {
+      return NextResponse.json({ error: "评论过于频繁，请稍后再试" }, { status: 429 });
+    }
+
     // Check post exists
     const postResult = await db.execute({
       sql: "SELECT id FROM posts WHERE id = ?",

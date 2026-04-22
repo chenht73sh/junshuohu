@@ -269,6 +269,16 @@ async function migrateDatabase(): Promise<void> {
       )`,
       args: [],
     },
+    {
+      sql: `CREATE TABLE IF NOT EXISTS login_attempts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ip TEXT NOT NULL,
+        username TEXT,
+        success INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+      args: [],
+    },
   ], "write");
 
   // Add total_points column to users if it doesn't exist (idempotent via try/catch)
@@ -311,6 +321,7 @@ async function migrateDatabase(): Promise<void> {
     { sql: "CREATE INDEX IF NOT EXISTS idx_point_records_created ON point_records(created_at DESC)", args: [] },
     { sql: "CREATE INDEX IF NOT EXISTS idx_invite_codes_code ON invite_codes(code)", args: [] },
     { sql: "CREATE INDEX IF NOT EXISTS idx_invite_codes_active ON invite_codes(is_active)", args: [] },
+    { sql: "CREATE INDEX IF NOT EXISTS idx_login_attempts_ip ON login_attempts(ip, created_at)", args: [] },
   ], "write");
 }
 
@@ -341,7 +352,8 @@ export async function seedCategories(): Promise<void> {
 }
 
 export async function seedAdmin(): Promise<void> {
-  const passwordHash = bcryptjs.hashSync("junshuohu2026", 10);
+  const adminPassword = process.env.ADMIN_INITIAL_PASSWORD || "junshuohu2026";
+  const passwordHash = bcryptjs.hashSync(adminPassword, 10);
 
   await db.batch([
     {

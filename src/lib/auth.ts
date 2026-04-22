@@ -2,7 +2,10 @@ import jwt from "jsonwebtoken";
 import bcryptjs from "bcryptjs";
 import { getDb } from "./db";
 
-const JWT_SECRET = process.env.JWT_SECRET || "junshuohu-dev-secret-change-in-production";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET environment variable is required");
+}
 const TOKEN_EXPIRES_IN = "7d";
 
 export interface JwtPayload {
@@ -51,7 +54,7 @@ export async function authenticateUser(
 export function generateToken(user: { id: number; username: string; role: string }): string {
   return jwt.sign(
     { userId: user.id, username: user.username, role: user.role } satisfies JwtPayload,
-    JWT_SECRET,
+    JWT_SECRET as string,
     { expiresIn: TOKEN_EXPIRES_IN }
   );
 }
@@ -61,7 +64,7 @@ export function generateToken(user: { id: number; username: string; role: string
  */
 export function verifyToken(token: string): JwtPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as JwtPayload;
+    return jwt.verify(token, JWT_SECRET as string) as JwtPayload;
   } catch {
     return null;
   }

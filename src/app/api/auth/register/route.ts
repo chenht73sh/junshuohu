@@ -25,6 +25,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 注册速率限制：1小时内同IP不超过5次注册尝试
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    const db = await initializeDatabase();
+    const windowStart = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const registerAttempts = await db.execute({
+      sql: `SELECT COUNT(*) as cnt FROM login_attempts WHERE ip = ? AND created_at > ? AND success = 2`,
+      args: [ip, windowStart],
+    });
+    if ((registerAttempts.rows[0].cnt as number) >= 5) {
+      return NextResponse.json({ error: "注册过于频繁，请稍后再试" }, { status: 429 });
+    }
+
     // Validate invite code
     if (!invite_code) {
       return NextResponse.json(
@@ -53,8 +65,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    const db = await initializeDatabase();
 
     // Validate invite code against database
     const codeResult = await db.execute({
@@ -111,6 +121,12 @@ export async function POST(request: NextRequest) {
     });
 
     const newUserId = result.lastInsertRowid!;
+
+    // 记录注册尝试（success=2 表示注册成功）
+    await db.execute({
+      sql: "INSERT INTO login_attempts (ip, username, success) VALUES (?, ?, 2)",
+      args: [ip, username],
+    });
 
     // Update invite code usage
     const newUsedCount = inviteCode.used_count + 1;

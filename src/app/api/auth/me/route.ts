@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const db = await initializeDatabase();
 
     const result = await db.execute({
-      sql: `SELECT id, username, email, display_name, avatar_url, role, bio, created_at
+      sql: `SELECT id, username, email, display_name, avatar_url, role, bio, created_at, total_points
             FROM users WHERE id = ?`,
       args: [payload.userId],
     });

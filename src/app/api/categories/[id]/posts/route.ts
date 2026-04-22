@@ -89,6 +89,21 @@ export async function POST(
       return NextResponse.json({ error: "标题不能超过100个字符" }, { status: 400 });
     }
 
+    if (content && (content as string).length > 50000) {
+      return NextResponse.json({ error: "帖子内容不能超过5万字" }, { status: 400 });
+    }
+
+    if (video_url) {
+      try {
+        const parsed = new URL(video_url as string);
+        if (!["http:", "https:"].includes(parsed.protocol)) {
+          return NextResponse.json({ error: "视频链接只支持 http/https 协议" }, { status: 400 });
+        }
+      } catch {
+        return NextResponse.json({ error: "视频链接格式不正确" }, { status: 400 });
+      }
+    }
+
     const db = await initializeDatabase();
 
     // Check category exists

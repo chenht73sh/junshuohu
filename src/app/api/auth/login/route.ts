@@ -17,30 +17,60 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 获取IP
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+
     const db = await initializeDatabase();
 
-    // Find user by username or email
+    // 查15分钟内失败次数（暴力破解限流）
+    const windowStart = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    const attemptsResult = await db.execute({
+      sql: `SELECT COUNT(*) as cnt FROM login_attempts WHERE ip = ? AND created_at > ? AND success = 0`,
+      args: [ip, windowStart],
+    });
+    if ((attemptsResult.rows[0].cnt as number) >= 10) {
+      return NextResponse.json({ error: "尝试次数过多，请15分钟后再试" }, { status: 429 });
+    }
+
+    // Find user by username or email — 显式列举字段，不返回手机号
     const result = await db.execute({
-      sql: "SELECT * FROM users WHERE username = ? OR email = ?",
+      sql: `SELECT id, username, email, password_hash, display_name, avatar_url, role, bio, created_at, total_points
+            FROM users WHERE username = ? OR email = ?`,
       args: [username, username],
     });
 
     if (result.rows.length === 0) {
+      // 记录失败尝试
+      await db.execute({
+        sql: "INSERT INTO login_attempts (ip, username, success) VALUES (?, ?, 0)",
+        args: [ip, username],
+      });
       return NextResponse.json(
         { error: "用户不存在" },
         { status: 401 }
       );
     }
 
-    const user = result.rows[0] as unknown as UserRow;
+    const user = result.rows[0] as unknown as UserRow & { total_points: number };
 
     // Compare password
     if (!bcryptjs.compareSync(password, user.password_hash)) {
+      // 记录失败尝试
+      await db.execute({
+        sql: "INSERT INTO login_attempts (ip, username, success) VALUES (?, ?, 0)",
+        args: [ip, username],
+      });
       return NextResponse.json(
         { error: "密码错误" },
         { status: 401 }
       );
     }
+
+    // 记录成功登录
+    await db.execute({
+      sql: "INSERT INTO login_attempts (ip, username, success) VALUES (?, ?, 1)",
+      args: [ip, username],
+    });
 
     const token = generateToken({
       id: user.id,
