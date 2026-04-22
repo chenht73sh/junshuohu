@@ -9,7 +9,10 @@ import {
   Eye,
   ChevronLeft,
   ChevronRight,
+  PenSquare,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
 /* ── Types ── */
 
@@ -59,6 +62,8 @@ function relativeTime(dateStr: string): string {
 /* ── Component ── */
 
 export default function CommunityPage() {
+  const { user } = useAuth();
+  const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [filter, setFilter] = useState<FilterType>("all");
@@ -67,6 +72,17 @@ export default function CommunityPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [showCatPicker, setShowCatPicker] = useState(false);
+
+  function handleNewPost() {
+    if (!user) { router.push("/login"); return; }
+    // 如果当前已选了某个板块，直接跳转；否则弹出板块选择
+    if (categoryId !== "all") {
+      router.push(`/community/${categoryId}/new-post`);
+    } else {
+      setShowCatPicker(true);
+    }
+  }
 
   const LIMIT = 20;
 
@@ -164,20 +180,50 @@ export default function CommunityPage() {
           ))}
         </div>
 
-        {/* Right: category dropdown */}
-        <select
-          value={categoryId}
-          onChange={(e) => changeCategory(e.target.value)}
-          className="px-4 py-2 text-sm rounded-lg border border-border bg-surface text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
-        >
-          <option value="all">全部板块</option>
-          {categories.map((cat) => (
-            <option key={cat.id} value={String(cat.id)}>
-              {cat.name}
-            </option>
-          ))}
-        </select>
+        {/* Right: category dropdown + 发新帖 */}
+        <div className="flex items-center gap-2">
+          <select
+            value={categoryId}
+            onChange={(e) => changeCategory(e.target.value)}
+            className="px-4 py-2 text-sm rounded-lg border border-border bg-surface text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+          >
+            <option value="all">全部板块</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={String(cat.id)}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={handleNewPost}
+            className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-dark transition-colors shrink-0"
+          >
+            <PenSquare size={15} />
+            发新帖
+          </button>
+        </div>
       </div>
+
+      {/* 板块选择弹窗 */}
+      {showCatPicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowCatPicker(false)}>
+          <div className="bg-surface rounded-2xl shadow-xl p-6 w-80 max-h-[70vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-serif text-lg font-semibold text-text-primary mb-4">选择发帖板块</h3>
+            <div className="space-y-2">
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => { setShowCatPicker(false); router.push(`/community/${cat.id}/new-post`); }}
+                  className="w-full text-left px-4 py-3 rounded-xl border border-border hover:bg-accent-light/40 hover:border-primary/30 transition-colors"
+                >
+                  <span className="text-sm font-medium text-text-primary">{cat.name}</span>
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setShowCatPicker(false)} className="mt-4 w-full text-sm text-text-muted hover:text-text-secondary py-2">取消</button>
+          </div>
+        </div>
+      )}
 
       {/* Desktop table */}
       <div className="hidden md:block card overflow-hidden">
