@@ -333,9 +333,7 @@ async function migrateDatabase(): Promise<void> {
     { sql: "CREATE INDEX IF NOT EXISTS idx_invite_codes_active ON invite_codes(is_active)", args: [] },
     { sql: "CREATE INDEX IF NOT EXISTS idx_login_attempts_ip ON login_attempts(ip, created_at)", args: [] },
     {
-      sql: `CREATE UNIQUE INDEX IF NOT EXISTS idx_checkin_user_date
-            ON point_records(user_id, action, date(created_at,'localtime'))
-            WHERE action = 'daily_checkin'`,
+      sql: `CREATE INDEX IF NOT EXISTS idx_checkin_user ON point_records(user_id, action, created_at)`,
       args: [],
     },
   ], "write");
