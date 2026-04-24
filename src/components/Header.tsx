@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useRef, useEffect } from "react";
-import { Menu, X, User, LogOut, ChevronDown, Shield } from "lucide-react";
+import { useState, useRef, useEffect, Suspense } from "react";
+import { Menu, X, User, LogOut, ChevronDown, Shield, Search } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
 interface NavItem {
   label: string;
@@ -22,12 +23,50 @@ const defaultNavItems: NavItem[] = [
   { label: "关于我们", href: "/about", visible: true },
 ];
 
+/* ── Desktop Search Box ── */
+function DesktopSearchBox() {
+  const router = useRouter();
+  const [value, setValue] = useState("");
+  const [focused, setFocused] = useState(false);
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const q = value.trim();
+    if (!q) return;
+    router.push(`/search?q=${encodeURIComponent(q)}`);
+    setValue("");
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="relative hidden md:flex items-center">
+      <Search
+        size={14}
+        className="absolute left-2.5 text-text-muted pointer-events-none"
+      />
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        placeholder="搜索帖子…"
+        maxLength={100}
+        className={`pl-8 pr-3 py-1.5 text-sm rounded-lg border bg-surface text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all duration-200 ${
+          focused ? "w-64 border-primary/50" : "w-44 border-border"
+        }`}
+      />
+    </form>
+  );
+}
+
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [mobileSearch, setMobileSearch] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user, loading, logout } = useAuth();
   const [navItems, setNavItems] = useState<NavItem[]>(defaultNavItems);
+  const router = useRouter();
 
   // Fetch nav menu from API
   useEffect(() => {
@@ -92,6 +131,9 @@ export default function Header() {
 
           {/* Right side — Desktop */}
           <div className="hidden md:flex items-center gap-3">
+            <Suspense fallback={null}>
+              <DesktopSearchBox />
+            </Suspense>
             {loading ? (
               <div className="w-20 h-8 rounded-lg bg-border-light animate-pulse" />
             ) : user ? (
@@ -185,6 +227,40 @@ export default function Header() {
       {mobileOpen && (
         <div className="md:hidden border-t border-border bg-surface">
           <nav className="px-4 py-3 space-y-1">
+            {/* Mobile Search */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const q = mobileSearch.trim();
+                if (!q) return;
+                setMobileOpen(false);
+                setMobileSearch("");
+                router.push(`/search?q=${encodeURIComponent(q)}`);
+              }}
+              className="flex items-center gap-2 mb-3"
+            >
+              <div className="relative flex-1">
+                <Search
+                  size={14}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
+                />
+                <input
+                  type="text"
+                  value={mobileSearch}
+                  onChange={(e) => setMobileSearch(e.target.value)}
+                  placeholder="搜索帖子…"
+                  maxLength={100}
+                  className="w-full pl-8 pr-3 py-2 text-sm rounded-lg border border-border bg-bg text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/40"
+                />
+              </div>
+              <button
+                type="submit"
+                className="p-2 text-text-muted hover:text-primary rounded-lg border border-border hover:border-primary transition-colors"
+              >
+                <Search size={16} />
+              </button>
+            </form>
+
             {visibleNavItems.map((item) => (
               <Link
                 key={item.href}
