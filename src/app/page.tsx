@@ -4,7 +4,7 @@ import { initializeDatabase } from "@/lib/db";
 import CategoryCard from "@/components/CategoryCard";
 import PostsTable from "@/components/PostsTable";
 import Link from "next/link";
-import { Users, Calendar, LayoutGrid, Pin, ArrowRight, Star } from "lucide-react";
+import { Users, Calendar, LayoutGrid, Pin, ArrowRight, Star, BookOpen, Clock, TrendingUp } from "lucide-react";
 
 interface CategoryRow {
   id: number;
@@ -179,11 +179,11 @@ export default async function HomePage() {
           <div className="card p-6 flex flex-wrap items-center justify-center gap-8 sm:gap-16">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Users size={20} className="text-primary" />
+                <Clock size={20} className="text-primary" />
               </div>
               <div>
-                <div className="text-xl font-bold text-text-primary">500+</div>
-                <div className="text-xs text-text-muted">活跃成员</div>
+                <div className="text-xl font-bold text-text-primary">10年</div>
+                <div className="text-xs text-text-muted">社群历史</div>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -192,7 +192,7 @@ export default async function HomePage() {
               </div>
               <div>
                 <div className="text-xl font-bold text-text-primary">500+</div>
-                <div className="text-xs text-text-muted">社群活动</div>
+                <div className="text-xs text-text-muted">线上线下活动</div>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -200,19 +200,19 @@ export default async function HomePage() {
                 <LayoutGrid size={20} className="text-secondary" />
               </div>
               <div>
-                <div className="text-xl font-bold text-text-primary">{categories.length}</div>
+                <div className="text-xl font-bold text-text-primary">9大</div>
                 <div className="text-xs text-text-muted">特色板块</div>
               </div>
             </div>
-            <Link href="/leaderboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                <Star size={20} className="text-amber-500" />
+                <BookOpen size={20} className="text-amber-500" />
               </div>
               <div>
-                <div className="text-xl font-bold text-text-primary">🏆</div>
-                <div className="text-xs text-text-muted">积分排行</div>
+                <div className="text-xl font-bold text-text-primary">多元</div>
+                <div className="text-xs text-text-muted">课程体系</div>
               </div>
-            </Link>
+            </div>
           </div>
         </div>
       </section>
@@ -338,7 +338,7 @@ export default async function HomePage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10">
             <h2 className="font-serif text-2xl sm:text-3xl font-bold mb-3">
-              {categories.length > 0 ? `${categories.length}大特色板块` : "特色板块"}
+              {categories.length > 0 ? `${categories.length}大特色板块` : "9大特色板块"}
             </h2>
             <p className="text-text-secondary max-w-xl mx-auto">
               每一个板块，都有一位用心的主理人。在这里，你一定能找到属于你的那个角落。
@@ -358,6 +358,289 @@ export default async function HomePage() {
                 post_count={cat.post_count}
               />
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Five Core Course Tracks */}
+      <section className="py-12 sm:py-16 bg-surface">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-10">
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold mb-3">✨ 五大课程体系</h2>
+            <p className="text-text-secondary max-w-xl mx-auto">
+              由各领域专家主理，涵盖科技、健康、艺术、法律、思维——总有一门课，能点亮你。
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[
+              {
+                icon: "🤖",
+                color: "#4A90D9",
+                title: "拥抱AI",
+                instructor: "陈工主讲",
+                count: "12门课程",
+                desc: "从ChatGPT到Cursor，手把手带你用AI创业、提效、开启副业新可能。",
+              },
+              {
+                icon: "🌿",
+                color: "#2ECC71",
+                title: "自然养生",
+                instructor: "谢老师主理",
+                count: "经络·本草·身心",
+                desc: "听身体说话，以自然之法养护生命，找回与自己和解的能力。",
+              },
+              {
+                icon: "🎨",
+                color: "#9B59B6",
+                title: "艺术人文",
+                instructor: "萤火虫·小黑鱼老师",
+                count: "美学·文化·创作",
+                desc: "在美的面前，我们都只是孩子。艺术滋养灵魂，人文丰盈生命。",
+              },
+              {
+                icon: "🧩",
+                color: "#E67E22",
+                title: "思辨与游戏",
+                instructor: "周溪乔老师主理",
+                count: "批判性思维·逻辑",
+                desc: "思维是一种游戏，游戏是一种哲学。训练你看透本质的眼睛。",
+              },
+              {
+                icon: "⚖️",
+                color: "#E74C3C",
+                title: "法律沙龙",
+                instructor: "刘律师主理",
+                count: "实用法律科普",
+                desc: "在不确定的时代，给你确定的底气。聊财富传承、合同风险、日常维权。",
+              },
+              {
+                icon: "📚",
+                color: "#8B6F47",
+                title: "更多板块",
+                instructor: "持续开放招募中",
+                count: "跑团·徒步·HR…",
+                desc: "乐走徒友、跑团、HR社群、微习惯、国王与天使…还有更多等你发现。",
+              },
+            ].map((track) => (
+              <Link
+                key={track.title}
+                href="/courses"
+                className="block border border-border rounded-xl p-5 bg-bg hover:border-primary/30 hover:shadow-card transition-all group"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-xl shrink-0"
+                    style={{ backgroundColor: `${track.color}18` }}
+                  >
+                    {track.icon}
+                  </div>
+                  <div>
+                    <h3
+                      className="font-semibold text-base group-hover:text-primary transition-colors"
+                      style={{ color: track.color }}
+                    >
+                      {track.title}
+                    </h3>
+                    <p className="text-xs text-text-muted">{track.instructor}</p>
+                  </div>
+                </div>
+                <p className="text-xs font-medium text-text-secondary mb-1.5">{track.count}</p>
+                <p className="text-sm text-text-muted leading-relaxed">{track.desc}</p>
+              </Link>
+            ))}
+          </div>
+          <div className="text-center mt-8">
+            <Link
+              href="/courses"
+              className="inline-flex items-center gap-2 px-6 py-2.5 bg-primary text-text-inverse text-sm font-medium rounded-xl hover:bg-primary-dark transition-colors"
+            >
+              <BookOpen size={16} />
+              查看全部课程
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Member Tiers */}
+      <section className="py-12 sm:py-16">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-10">
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold mb-3">🌱 三级成员体系</h2>
+            <p className="text-text-secondary max-w-xl mx-auto">
+              不只是加入，更是成长。从参与者到共建者，每一步都有意义。
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            {[
+              {
+                level: "L1",
+                title: "参与者",
+                color: "#4A90D9",
+                badge: "🌱",
+                desc: "加入社群，参与活动与课程，感受君说乎的温度与氛围。",
+                perks: ["参与线上线下活动", "访问社群帖子", "课程报名资格", "积分签到"],
+              },
+              {
+                level: "L2",
+                title: "同行者",
+                subtitle: "运营官",
+                color: "#8B6F47",
+                badge: "🌿",
+                desc: "深度参与社群运营，成为某一板块或方向的主理人。",
+                perks: ["担任板块运营官", "协助组织活动", "优先课程资源", "专属社群认证"],
+                highlight: true,
+              },
+              {
+                level: "L3",
+                title: "共建者",
+                subtitle: "战略合伙人",
+                color: "#E67E22",
+                badge: "🔥",
+                desc: "共同定义君说乎的未来，参与战略决策与价值共创。",
+                perks: ["参与战略规划", "课程内容共创", "品牌联名权益", "社群利益分配"],
+              },
+            ].map((tier) => (
+              <div
+                key={tier.level}
+                className={`relative border rounded-xl p-6 bg-bg transition-all ${
+                  tier.highlight
+                    ? "border-primary shadow-card"
+                    : "border-border hover:border-primary/30 hover:shadow-card"
+                }`}
+              >
+                {tier.highlight && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="px-3 py-1 text-xs font-bold bg-primary text-text-inverse rounded-full">
+                      核心角色
+                    </span>
+                  </div>
+                )}
+                <div className="text-center mb-4">
+                  <div className="text-3xl mb-2">{tier.badge}</div>
+                  <div
+                    className="text-xs font-bold mb-1 tracking-widest"
+                    style={{ color: tier.color }}
+                  >
+                    {tier.level}
+                  </div>
+                  <h3 className="font-serif font-bold text-lg text-text-primary">
+                    {tier.title}
+                  </h3>
+                  {tier.subtitle && (
+                    <p className="text-xs text-text-muted mt-0.5">{tier.subtitle}</p>
+                  )}
+                </div>
+                <p className="text-sm text-text-secondary leading-relaxed mb-4 text-center">
+                  {tier.desc}
+                </p>
+                <ul className="space-y-2">
+                  {tier.perks.map((perk) => (
+                    <li key={perk} className="flex items-center gap-2 text-sm text-text-secondary">
+                      <span style={{ color: tier.color }}>✓</span>
+                      {perk}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <div className="text-center mt-8">
+            <Link
+              href="/register"
+              className="inline-flex items-center gap-2 px-6 py-2.5 bg-primary text-text-inverse text-sm font-medium rounded-xl hover:bg-primary-dark transition-colors"
+            >
+              <Users size={16} />
+              立即加入，开启同频之旅
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* 2026 Roadmap */}
+      <section className="py-12 sm:py-16 bg-surface">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-10">
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold mb-3">
+              🗓️ 2026 发展规划
+            </h2>
+            <p className="text-text-secondary max-w-xl mx-auto">
+              君说乎数字家园正在全新启航。我们有清晰的节奏，也期待你与我们同行。
+            </p>
+          </div>
+          <div className="relative">
+            {/* Timeline line */}
+            <div className="absolute left-6 sm:left-1/2 top-0 bottom-0 w-0.5 bg-border -translate-x-1/2 hidden sm:block" />
+            <div className="space-y-6">
+              {[
+                {
+                  period: "2026年5月",
+                  phase: "基础搭建",
+                  icon: "🏗️",
+                  color: "#4A90D9",
+                  desc: "搭建数字家园平台，完善社群基础设施，建立运营规范与内容体系框架。",
+                  side: "left",
+                },
+                {
+                  period: "2026年6—9月",
+                  phase: "冷启动验证",
+                  icon: "🧪",
+                  color: "#2ECC71",
+                  desc: "引入核心种子用户，验证课程产品与社群运营模型，持续迭代优化。",
+                  side: "right",
+                },
+                {
+                  period: "2026年10—12月",
+                  phase: "稳定运营",
+                  icon: "📈",
+                  color: "#E67E22",
+                  desc: "建立稳定的课程排期、活动节奏与成员增长机制，完成年度目标。",
+                  side: "left",
+                },
+                {
+                  period: "2027年",
+                  phase: "规模化复制",
+                  icon: "🚀",
+                  color: "#9B59B6",
+                  desc: "在验证成功模式的基础上，扩大影响力，探索多城市落地与生态合作。",
+                  side: "right",
+                },
+              ].map((item, idx) => (
+                <div
+                  key={idx}
+                  className={`relative flex flex-col sm:flex-row items-start gap-4 ${
+                    item.side === "right" ? "sm:flex-row-reverse" : ""
+                  }`}
+                >
+                  {/* Center dot */}
+                  <div className="hidden sm:flex absolute left-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-bg border-2 items-center justify-center text-lg shadow-card z-10"
+                       style={{ borderColor: item.color }}>
+                    {item.icon}
+                  </div>
+                  {/* Content card */}
+                  <div className={`sm:w-[calc(50%-2rem)] ${item.side === "right" ? "sm:ml-auto" : ""}`}>
+                    <div className="border border-border rounded-xl p-5 bg-bg hover:shadow-card transition-all">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="sm:hidden text-xl">{item.icon}</span>
+                        <span
+                          className="text-xs font-bold tracking-wide"
+                          style={{ color: item.color }}
+                        >
+                          {item.period}
+                        </span>
+                      </div>
+                      <h3 className="font-serif font-semibold text-base text-text-primary mb-1.5">
+                        {item.phase}
+                      </h3>
+                      <p className="text-sm text-text-secondary leading-relaxed">
+                        {item.desc}
+                      </p>
+                    </div>
+                  </div>
+                  {/* Spacer for opposite side */}
+                  <div className="hidden sm:block sm:w-[calc(50%-2rem)]" />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>

@@ -516,6 +516,7 @@ export async function seedSiteSettings(): Promise<void> {
     { sql: "INSERT OR IGNORE INTO site_settings (key, value) VALUES (?, ?)", args: ["about_content", aboutContent] },
     { sql: "INSERT OR IGNORE INTO site_settings (key, value) VALUES (?, ?)", args: ["footer_content", footerContent] },
     { sql: "INSERT OR IGNORE INTO site_settings (key, value) VALUES (?, ?)", args: ["contact_info", contactInfo] },
+    { sql: "INSERT OR IGNORE INTO site_settings (key, value) VALUES (?, ?)", args: ["require_invite_code", "true"] },
   ], "write");
 }
 

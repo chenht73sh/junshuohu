@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Plus, Trash2, ArrowUp, ArrowDown, X } from "lucide-react";
 
-type Tab = "nav" | "hero" | "about" | "footer" | "contact";
+type Tab = "nav" | "hero" | "about" | "footer" | "contact" | "register";
 
 interface NavItem {
   label: string;
@@ -92,6 +92,7 @@ export default function AdminSettingsPage() {
     wechat_qrcode: "",
     custom_fields: [],
   });
+  const [requireInviteCode, setRequireInviteCode] = useState(true);
 
   const fetchSettings = useCallback(() => {
     if (!token) return;
@@ -107,6 +108,7 @@ export default function AdminSettingsPage() {
         if (s.about_content) setAboutContent(s.about_content);
         if (s.footer_content) setFooterContent(s.footer_content);
         if (s.contact_info) setContactInfo(s.contact_info);
+        if (s.require_invite_code !== undefined) setRequireInviteCode(s.require_invite_code === true || s.require_invite_code === "true");
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -225,6 +227,7 @@ export default function AdminSettingsPage() {
     { key: "about", label: "关于我们" },
     { key: "footer", label: "页脚信息" },
     { key: "contact", label: "联系方式" },
+    { key: "register", label: "注册设置" },
   ];
 
   if (loading) {
@@ -738,6 +741,56 @@ export default function AdminSettingsPage() {
                 className="px-6 py-2.5 bg-primary text-text-inverse rounded-lg hover:bg-primary-dark disabled:opacity-50 transition-colors font-medium text-sm"
               >
                 {saving ? "保存中..." : "保存联系方式"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Register Settings ── */}
+        {activeTab === "register" && (
+          <div className="space-y-6">
+            <div>
+              <h3 className="font-medium text-text-primary mb-1">注册限制设置</h3>
+              <p className="text-sm text-text-muted mb-4">
+                控制新用户注册时是否必须提供有效邀请码。
+              </p>
+            </div>
+
+            <div className="flex items-start gap-4 p-4 bg-accent-light/30 border border-border rounded-xl">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-text-primary">强制邀请码注册</p>
+                <p className="text-xs text-text-muted mt-1">
+                  开启后，新用户注册必须填写有效的邀请码；关闭后，邀请码为选填项。
+                  当前状态：
+                  <span className={`font-semibold ml-1 ${requireInviteCode ? "text-primary" : "text-text-secondary"}`}>
+                    {requireInviteCode ? "已开启（必须填写邀请码）" : "已关闭（邀请码选填）"}
+                  </span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRequireInviteCode((v) => !v)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${
+                  requireInviteCode ? "bg-primary" : "bg-border"
+                }`}
+                role="switch"
+                aria-checked={requireInviteCode}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                    requireInviteCode ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className="pt-4 border-t border-border-light">
+              <button
+                onClick={() => handleSave("require_invite_code", requireInviteCode)}
+                disabled={saving}
+                className="px-6 py-2.5 bg-primary text-text-inverse rounded-lg hover:bg-primary-dark disabled:opacity-50 transition-colors font-medium text-sm"
+              >
+                {saving ? "保存中..." : "保存注册设置"}
               </button>
             </div>
           </div>

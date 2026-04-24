@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   Shield,
+  Download,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -29,6 +30,7 @@ const sidebarItems = [
   { label: "公告管理", href: "/admin/announcements", icon: Megaphone },
   { label: "课程管理", href: "/admin/courses", icon: BookOpen },
   { label: "活动管理", href: "/admin/activities", icon: Calendar },
+  { label: "数据导出", href: "/admin/export", icon: Download },
   { label: "站点设置", href: "/admin/settings", icon: Settings },
 ];
 

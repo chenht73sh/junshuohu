@@ -17,6 +17,7 @@ import {
   File,
   Upload,
 } from "lucide-react";
+import MarkdownEditor from "@/components/MarkdownEditor";
 
 interface Category {
   id: number;
@@ -316,19 +317,15 @@ export default function NewPostPage() {
 
           {/* Content */}
           <div>
-            <label
-              htmlFor="content"
-              className="block text-sm font-medium text-text-primary mb-1.5"
-            >
+            <label className="block text-sm font-medium text-text-primary mb-1.5">
               帖子内容
+              <span className="ml-2 text-xs text-text-muted font-normal">（支持 Markdown 格式）</span>
             </label>
-            <textarea
-              id="content"
+            <MarkdownEditor
               value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="分享你的想法、经历、感悟..."
-              rows={12}
-              className="w-full px-4 py-3 bg-bg border border-border rounded-lg text-text-primary placeholder:text-text-muted resize-y focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
+              onChange={setContent}
+              placeholder="分享你的想法、经历、感悟...（支持 **粗体**、*斜体*、# 标题、- 列表 等 Markdown 格式）"
+              rows={14}
             />
           </div>
 

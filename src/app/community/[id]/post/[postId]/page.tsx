@@ -20,6 +20,21 @@ import {
 import { notFound } from "next/navigation";
 import CommentSection from "./CommentSection";
 import PostImageGallery from "./PostImageGallery";
+import { marked } from "marked";
+
+// Configure marked for server-side rendering
+marked.setOptions({ breaks: true, gfm: true });
+
+function renderPostContent(text: string): string {
+  const html = marked.parse(text) as string;
+  // Basic XSS sanitization
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<iframe[\s\S]*?<\/iframe>/gi, "")
+    .replace(/<[^>]+ on\w+="[^"]*"/gi, "")
+    .replace(/<[^>]+ on\w+='[^']*'/gi, "")
+    .replace(/javascript:/gi, "");
+}
 
 interface PostRow {
   id: number;
@@ -259,10 +274,11 @@ export default async function PostDetailPage({
               </span>
             </div>
 
-            {/* Content */}
-            <div className="prose-warm text-text-primary leading-relaxed whitespace-pre-wrap">
-              {post.content}
-            </div>
+            {/* Content — rendered as Markdown HTML */}
+            <div
+              className="prose-warm text-text-primary leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: renderPostContent(post.content) }}
+            />
 
             {/* Images */}
             {images.length > 0 && (
