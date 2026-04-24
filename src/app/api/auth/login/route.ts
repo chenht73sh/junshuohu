@@ -17,8 +17,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 获取IP
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    // 获取IP（信任链修复）
+    const ip =
+      request.headers.get("cf-connecting-ip") ??
+      request.headers.get("x-real-ip") ??
+      request.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim() ??
+      "unknown";
 
     const db = await initializeDatabase();
 
@@ -46,7 +50,7 @@ export async function POST(request: NextRequest) {
         args: [ip, username],
       });
       return NextResponse.json(
-        { error: "用户不存在" },
+        { error: "用户名或密码错误" },
         { status: 401 }
       );
     }
@@ -61,7 +65,7 @@ export async function POST(request: NextRequest) {
         args: [ip, username],
       });
       return NextResponse.json(
-        { error: "密码错误" },
+        { error: "用户名或密码错误" },
         { status: 401 }
       );
     }

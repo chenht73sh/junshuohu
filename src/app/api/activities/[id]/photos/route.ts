@@ -42,6 +42,13 @@ export async function POST(request: NextRequest, { params }: Params) {
     const { image_url, caption } = body;
     if (!image_url) return NextResponse.json({ error: "image_url 为必填项" }, { status: 400 });
 
+    try {
+      const parsed = new URL(image_url);
+      if (!["http:", "https:"].includes(parsed.protocol)) throw new Error();
+    } catch {
+      return NextResponse.json({ error: "无效的图片URL，只支持http/https" }, { status: 400 });
+    }
+
     const db = await initializeDatabase();
     const result = await db.execute({
       sql: `INSERT INTO activity_photos (activity_id, image_url, caption, uploaded_by) VALUES (?, ?, ?, ?)`,

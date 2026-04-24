@@ -116,15 +116,25 @@ export default function LoginPage() {
           </form>
 
           {/* Footer */}
-          <p className="text-center text-sm text-text-muted mt-6">
-            还没有账号？{" "}
-            <Link
-              href="/register"
-              className="text-primary hover:text-primary-dark font-medium transition-colors"
-            >
-              去注册
-            </Link>
-          </p>
+          <div className="flex flex-col items-center gap-2 mt-6">
+            <p className="text-sm text-text-muted">
+              <Link
+                href="/forgot-password"
+                className="text-text-muted hover:text-primary transition-colors"
+              >
+                忘记密码？
+              </Link>
+            </p>
+            <p className="text-center text-sm text-text-muted">
+              还没有账号？{" "}
+              <Link
+                href="/register"
+                className="text-primary hover:text-primary-dark font-medium transition-colors"
+              >
+                去注册
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

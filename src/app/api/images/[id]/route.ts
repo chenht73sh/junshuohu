@@ -26,9 +26,19 @@ export async function GET(
 
     const row = result.rows[0];
     const originalName = row.original_name as string;
-    const mimeType = row.mime_type as string;
     const base64Data = row.data as string;
     const buffer = Buffer.from(base64Data, "base64");
+
+    const SAFE_MIMES = new Set([
+      "image/jpeg", "image/png", "image/gif", "image/webp",
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ]);
+    let mimeType = row.mime_type as string;
+    if (!SAFE_MIMES.has(mimeType)) {
+      mimeType = "application/octet-stream";
+    }
 
     const { searchParams } = new URL(request.url);
     const isDownload = searchParams.get("download") === "1";
@@ -37,6 +47,7 @@ export async function GET(
       "Content-Type": mimeType,
       "Content-Length": buffer.length.toString(),
       "Cache-Control": "public, max-age=31536000, immutable",
+      "X-Content-Type-Options": "nosniff",
     };
 
     if (isDownload) {

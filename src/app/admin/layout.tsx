@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
@@ -22,6 +22,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const sidebarItems = [
   { label: "仪表盘", href: "/admin", icon: LayoutDashboard },
   { label: "用户管理", href: "/admin/users", icon: Users },
+  { label: "密码重置申请", href: "/admin/password-resets", icon: KeyRound, badgeKey: "passwordResets" },
   { label: "邀请码管理", href: "/admin/invite-codes", icon: KeyRound },
   { label: "帖子管理", href: "/admin/posts", icon: FileText },
   { label: "板块管理", href: "/admin/categories", icon: LayoutGrid },
@@ -36,10 +37,30 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading } = useAuth();
+  const { user, loading, token } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pendingResets, setPendingResets] = useState(0);
+
+  const fetchPendingResets = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch("/api/admin/password-resets", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPendingResets(data.pendingCount || 0);
+      }
+    } catch {
+      // ignore
+    }
+  }, [token]);
+
+  useEffect(() => {
+    fetchPendingResets();
+  }, [fetchPendingResets]);
 
   useEffect(() => {
     if (!loading && (!user || (user.role !== "admin" && user.role !== "moderator"))) {
@@ -108,6 +129,7 @@ export default function AdminLayout({
               pathname === item.href ||
               (item.href !== "/admin" && pathname.startsWith(item.href));
             const Icon = item.icon;
+            const badge = item.badgeKey === "passwordResets" ? pendingResets : 0;
             return (
               <Link
                 key={item.href}
@@ -124,7 +146,12 @@ export default function AdminLayout({
                 `}
               >
                 <Icon size={18} />
-                {item.label}
+                <span className="flex-1">{item.label}</span>
+                {badge > 0 && (
+                  <span className="px-1.5 py-0.5 text-xs font-bold bg-red-500 text-white rounded-full leading-none">
+                    {badge}
+                  </span>
+                )}
               </Link>
             );
           })}

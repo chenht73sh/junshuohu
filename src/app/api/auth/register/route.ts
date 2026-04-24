@@ -25,8 +25,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 注册速率限制：1小时内同IP不超过5次注册尝试
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    // 注册速率限制：1小时内同IP不超过5次注册尝试（信任链修复）
+    const ip =
+      request.headers.get("cf-connecting-ip") ??
+      request.headers.get("x-real-ip") ??
+      request.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim() ??
+      "unknown";
     const db = await initializeDatabase();
     const windowStart = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const registerAttempts = await db.execute({
@@ -92,7 +96,7 @@ export async function POST(request: NextRequest) {
     });
     if (existingUsername.rows.length > 0) {
       return NextResponse.json(
-        { error: "用户名已被注册" },
+        { error: "该信息已被使用" },
         { status: 409 }
       );
     }
@@ -105,7 +109,7 @@ export async function POST(request: NextRequest) {
       });
       if (existingEmail.rows.length > 0) {
         return NextResponse.json(
-          { error: "邮箱已被注册" },
+          { error: "该信息已被使用" },
           { status: 409 }
         );
       }

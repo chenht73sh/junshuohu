@@ -279,6 +279,16 @@ async function migrateDatabase(): Promise<void> {
       )`,
       args: [],
     },
+    {
+      sql: `CREATE TABLE IF NOT EXISTS password_reset_requests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username_or_email TEXT NOT NULL,
+        status TEXT DEFAULT 'pending',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        handled_at DATETIME
+      )`,
+      args: [],
+    },
   ], "write");
 
   // Add total_points column to users if it doesn't exist (idempotent via try/catch)
@@ -322,6 +332,12 @@ async function migrateDatabase(): Promise<void> {
     { sql: "CREATE INDEX IF NOT EXISTS idx_invite_codes_code ON invite_codes(code)", args: [] },
     { sql: "CREATE INDEX IF NOT EXISTS idx_invite_codes_active ON invite_codes(is_active)", args: [] },
     { sql: "CREATE INDEX IF NOT EXISTS idx_login_attempts_ip ON login_attempts(ip, created_at)", args: [] },
+    {
+      sql: `CREATE UNIQUE INDEX IF NOT EXISTS idx_checkin_user_date
+            ON point_records(user_id, action, date(created_at,'localtime'))
+            WHERE action = 'daily_checkin'`,
+      args: [],
+    },
   ], "write");
 }
 

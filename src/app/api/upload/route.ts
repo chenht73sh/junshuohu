@@ -75,6 +75,39 @@ export async function POST(request: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
+
+    // Magic bytes validation
+    const MAGIC: Record<string, number[][]> = {
+      "image/jpeg": [[0xFF, 0xD8, 0xFF]],
+      "image/png":  [[0x89, 0x50, 0x4E, 0x47]],
+      "image/gif":  [[0x47, 0x49, 0x46, 0x38]],
+      "image/webp": [[0x52, 0x49, 0x46, 0x46]],
+      "application/pdf": [[0x25, 0x50, 0x44, 0x46]],
+    };
+    // ZIP-based formats (docx, xlsx, pptx, zip)
+    const ZIP_MAGIC = [0x50, 0x4B];
+    const ZIP_TYPES = new Set([
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "application/zip",
+      "application/x-zip-compressed",
+    ]);
+
+    const header = Array.from(buffer.slice(0, 12));
+    if (MAGIC[file.type]) {
+      const valid = MAGIC[file.type].some((sig) =>
+        sig.every((byte, i) => header[i] === byte)
+      );
+      if (!valid) {
+        return NextResponse.json({ error: "文件内容与声明的格式不匹配" }, { status: 400 });
+      }
+    } else if (ZIP_TYPES.has(file.type)) {
+      const valid = ZIP_MAGIC.every((byte, i) => header[i] === byte);
+      if (!valid) {
+        return NextResponse.json({ error: "文件内容与声明的格式不匹配" }, { status: 400 });
+      }
+    }
     const uuid = crypto.randomUUID();
     const ext = getExtFromMime(file.type);
     const filename = `${uuid}${ext}`;

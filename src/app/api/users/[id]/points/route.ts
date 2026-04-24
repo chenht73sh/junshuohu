@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { initializeDatabase } from "@/lib/db";
+import { requireAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,12 @@ export async function GET(request: NextRequest, { params }: Params) {
     const { id } = await params;
     const userId = parseInt(id, 10);
     if (isNaN(userId)) return NextResponse.json({ error: "无效用户ID" }, { status: 400 });
+
+    const auth = requireAuth(request);
+    if (auth instanceof NextResponse) return auth;
+    if (auth.userId !== userId && auth.role !== "admin") {
+      return NextResponse.json({ error: "无权查看" }, { status: 403 });
+    }
 
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
