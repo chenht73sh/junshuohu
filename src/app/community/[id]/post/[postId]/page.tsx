@@ -20,6 +20,7 @@ import {
 import { notFound } from "next/navigation";
 import CommentSection from "./CommentSection";
 import PostImageGallery from "./PostImageGallery";
+import SendMessageButton from "./SendMessageButton";
 import { marked } from "marked";
 
 // Configure marked for server-side rendering
@@ -259,6 +260,7 @@ export default async function PostDetailPage({
                     版主
                   </span>
                 )}
+                <SendMessageButton authorId={post.author_id} />
               </div>
             </div>
           </div>

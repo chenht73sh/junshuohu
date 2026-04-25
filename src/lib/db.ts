@@ -289,6 +289,17 @@ async function migrateDatabase(): Promise<void> {
       )`,
       args: [],
     },
+    {
+      sql: `CREATE TABLE IF NOT EXISTS messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sender_id INTEGER NOT NULL REFERENCES users(id),
+        receiver_id INTEGER NOT NULL REFERENCES users(id),
+        content TEXT NOT NULL,
+        is_read INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+      args: [],
+    },
   ], "write");
 
   // Add total_points column to users if it doesn't exist (idempotent via try/catch)
@@ -336,6 +347,10 @@ async function migrateDatabase(): Promise<void> {
       sql: `CREATE INDEX IF NOT EXISTS idx_checkin_user ON point_records(user_id, action, created_at)`,
       args: [],
     },
+    { sql: "CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_id)", args: [] },
+    { sql: "CREATE INDEX IF NOT EXISTS idx_messages_receiver ON messages(receiver_id)", args: [] },
+    { sql: "CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(sender_id, receiver_id, created_at)", args: [] },
+    { sql: "CREATE INDEX IF NOT EXISTS idx_messages_unread ON messages(receiver_id, is_read)", args: [] },
   ], "write");
 }
 

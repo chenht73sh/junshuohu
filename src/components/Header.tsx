@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useRef, useEffect, Suspense } from "react";
-import { Menu, X, User, LogOut, ChevronDown, Shield, Search } from "lucide-react";
+import { Menu, X, User, LogOut, ChevronDown, Shield, Search, Mail } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 
@@ -56,6 +56,57 @@ function DesktopSearchBox() {
         }`}
       />
     </form>
+  );
+}
+
+/* ── Messages Icon with unread badge ── */
+function MessagesIcon() {
+  const { user, token } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user || !token) {
+      setUnreadCount(0);
+      return;
+    }
+    let cancelled = false;
+    async function fetchUnread() {
+      try {
+        const res = await fetch("/api/messages/unread-count", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok && !cancelled) {
+          const data = await res.json();
+          setUnreadCount(data.count || 0);
+        }
+      } catch {
+        // silently ignore
+      }
+    }
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [user, token]);
+
+  if (!user) return null;
+
+  return (
+    <Link
+      href="/messages"
+      className="relative flex items-center justify-center w-8 h-8 rounded-lg text-text-secondary hover:text-primary hover:bg-accent-light/50 transition-colors"
+      aria-label="消息"
+      title="消息"
+    >
+      <Mail size={18} />
+      {unreadCount > 0 && (
+        <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
+          {unreadCount > 99 ? "99+" : unreadCount}
+        </span>
+      )}
+    </Link>
   );
 }
 
@@ -134,6 +185,7 @@ export default function Header() {
             <Suspense fallback={null}>
               <DesktopSearchBox />
             </Suspense>
+            <MessagesIcon />
             {loading ? (
               <div className="w-20 h-8 rounded-lg bg-border-light animate-pulse" />
             ) : user ? (
@@ -296,6 +348,14 @@ export default function Header() {
                   >
                     <User size={14} />
                     个人中心
+                  </Link>
+                  <Link
+                    href="/messages"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm text-text-secondary hover:text-primary hover:bg-accent-light/50 transition-colors"
+                  >
+                    <Mail size={14} />
+                    消息中心
                   </Link>
                   {(user.role === "admin" || user.role === "moderator") && (
                     <Link
