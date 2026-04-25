@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, FileText, BookOpen, UserCheck } from "lucide-react";
+import { Users, FileText, BookOpen, UserCheck, CreditCard } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface Stats {
@@ -9,6 +9,11 @@ interface Stats {
   postCount: number;
   courseCount: number;
   enrollmentCount: number;
+}
+
+interface CardStats {
+  card_holders: number;
+  remaining_sessions: number;
 }
 
 interface RecentUser {
@@ -41,6 +46,8 @@ export default function AdminDashboard() {
   const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
   const [recentPosts, setRecentPosts] = useState<RecentPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cardStats, setCardStats] = useState<CardStats | null>(null);
+  const [monthlyEnrollments, setMonthlyEnrollments] = useState<number>(0);
 
   useEffect(() => {
     if (!token) return;
@@ -55,6 +62,17 @@ export default function AdminDashboard() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
+
+    // Fetch card stats
+    fetch("/api/admin/member-cards/stats", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.overall) setCardStats(data.overall);
+        if (data.monthly) setMonthlyEnrollments(data.monthly.monthly_enrollments || 0);
+      })
+      .catch(() => {});
   }, [token]);
 
   if (loading) {
@@ -97,6 +115,37 @@ export default function AdminDashboard() {
             </div>
           );
         })}
+      </div>
+
+      {/* Card stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-surface border border-border rounded-xl p-5 flex items-center gap-4 shadow-card">
+          <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center shrink-0">
+            <Users size={22} className="text-amber-700" />
+          </div>
+          <div>
+            <p className="text-sm text-text-muted">次卡持有人数</p>
+            <p className="text-2xl font-semibold text-text-primary">{cardStats?.card_holders ?? 0}</p>
+          </div>
+        </div>
+        <div className="bg-surface border border-border rounded-xl p-5 flex items-center gap-4 shadow-card">
+          <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
+            <UserCheck size={22} className="text-blue-700" />
+          </div>
+          <div>
+            <p className="text-sm text-text-muted">本月报名人次</p>
+            <p className="text-2xl font-semibold text-text-primary">{monthlyEnrollments}</p>
+          </div>
+        </div>
+        <div className="bg-surface border border-border rounded-xl p-5 flex items-center gap-4 shadow-card">
+          <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
+            <CreditCard size={22} className="text-green-700" />
+          </div>
+          <div>
+            <p className="text-sm text-text-muted">次卡总剩余次数</p>
+            <p className="text-2xl font-semibold text-text-primary">{cardStats?.remaining_sessions ?? 0}</p>
+          </div>
+        </div>
       </div>
 
       {/* Recent data */}

@@ -300,6 +300,36 @@ async function migrateDatabase(): Promise<void> {
       )`,
       args: [],
     },
+    {
+      sql: `CREATE TABLE IF NOT EXISTS member_cards (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        card_type TEXT NOT NULL CHECK(card_type IN ('10次卡', '20次卡', '单次')),
+        total_sessions INTEGER NOT NULL,
+        remaining_sessions INTEGER NOT NULL,
+        purchase_price REAL NOT NULL,
+        purchase_date TEXT NOT NULL DEFAULT (datetime('now')),
+        notes TEXT,
+        created_by INTEGER REFERENCES users(id),
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+      args: [],
+    },
+    {
+      sql: `CREATE TABLE IF NOT EXISTS card_transactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        card_id INTEGER NOT NULL REFERENCES member_cards(id),
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        course_id INTEGER REFERENCES courses(id),
+        enrollment_id INTEGER REFERENCES enrollments(id),
+        sessions_deducted INTEGER NOT NULL DEFAULT 1,
+        guest_count INTEGER NOT NULL DEFAULT 0,
+        transaction_type TEXT NOT NULL CHECK(transaction_type IN ('课程报名', '带人扣次', '管理员调整', '退款退次')),
+        notes TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+      args: [],
+    },
   ], "write");
 
   // Add total_points column to users if it doesn't exist (idempotent via try/catch)
@@ -315,6 +345,20 @@ async function migrateDatabase(): Promise<void> {
   } catch {
     // Column already exists — fine
   }
+
+  // Add payment fields to enrollments (idempotent via try/catch)
+  try {
+    await db.execute({ sql: "ALTER TABLE enrollments ADD COLUMN payment_type TEXT DEFAULT '次卡'", args: [] });
+  } catch { /* already exists */ }
+  try {
+    await db.execute({ sql: "ALTER TABLE enrollments ADD COLUMN single_price REAL DEFAULT 58", args: [] });
+  } catch { /* already exists */ }
+  try {
+    await db.execute({ sql: "ALTER TABLE enrollments ADD COLUMN guest_count INTEGER DEFAULT 0", args: [] });
+  } catch { /* already exists */ }
+  try {
+    await db.execute({ sql: "ALTER TABLE enrollments ADD COLUMN card_transaction_id INTEGER REFERENCES card_transactions(id)", args: [] });
+  } catch { /* already exists */ }
 
   // Create indexes (separate batch since they reference tables created above)
   await db.batch([
@@ -351,6 +395,11 @@ async function migrateDatabase(): Promise<void> {
     { sql: "CREATE INDEX IF NOT EXISTS idx_messages_receiver ON messages(receiver_id)", args: [] },
     { sql: "CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(sender_id, receiver_id, created_at)", args: [] },
     { sql: "CREATE INDEX IF NOT EXISTS idx_messages_unread ON messages(receiver_id, is_read)", args: [] },
+    { sql: "CREATE INDEX IF NOT EXISTS idx_member_cards_user ON member_cards(user_id)", args: [] },
+    { sql: "CREATE INDEX IF NOT EXISTS idx_member_cards_type ON member_cards(card_type)", args: [] },
+    { sql: "CREATE INDEX IF NOT EXISTS idx_card_transactions_card ON card_transactions(card_id)", args: [] },
+    { sql: "CREATE INDEX IF NOT EXISTS idx_card_transactions_user ON card_transactions(user_id)", args: [] },
+    { sql: "CREATE INDEX IF NOT EXISTS idx_card_transactions_course ON card_transactions(course_id)", args: [] },
   ], "write");
 }
 

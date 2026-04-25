@@ -14,6 +14,8 @@ import {
   Clock,
   Share2,
   Check,
+  CreditCard,
+  ChevronDown,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -41,6 +43,15 @@ interface Enrollment {
   avatar_url: string | null;
 }
 
+interface MyCard {
+  id: number;
+  card_type: string;
+  total_sessions: number;
+  remaining_sessions: number;
+  purchase_date: string;
+  notes: string | null;
+}
+
 export default function CourseDetailPage() {
   const params = useParams();
   const courseId = params.id as string;
@@ -53,6 +64,13 @@ export default function CourseDetailPage() {
   const [enrolling, setEnrolling] = useState(false);
   const [countdown, setCountdown] = useState("");
   const [copied, setCopied] = useState(false);
+
+  // Payment state
+  const [myCards, setMyCards] = useState<MyCard[]>([]);
+  const [cardsLoading, setCardsLoading] = useState(false);
+  const [paymentType, setPaymentType] = useState<"次卡" | "单次">("次卡");
+  const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
+  const [guestCount, setGuestCount] = useState(0);
 
   function handleCopyLink() {
     const url = `${window.location.origin}/courses/${courseId}`;
@@ -84,6 +102,28 @@ export default function CourseDetailPage() {
 
     fetchData();
   }, [courseId]);
+
+  // Fetch user's cards
+  useEffect(() => {
+    if (!token) return;
+    setCardsLoading(true);
+    fetch("/api/users/my-cards", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        const cards: MyCard[] = data.cards || [];
+        setMyCards(cards);
+        if (cards.length > 0) {
+          setSelectedCardId(cards[0].id);
+          setPaymentType("次卡");
+        } else {
+          setPaymentType("单次");
+        }
+      })
+      .catch(() => {})
+      .finally(() => setCardsLoading(false));
+  }, [token]);
 
   // Check if user is enrolled
   useEffect(() => {
@@ -124,17 +164,34 @@ export default function CourseDetailPage() {
     return () => clearInterval(timer);
   }, [course]);
 
+  // Compute deduction preview
+  const selectedCard = myCards.find((c) => c.id === selectedCardId) || null;
+  const sessionsNeeded = 1 + guestCount;
+  const sessionsAfter = selectedCard ? selectedCard.remaining_sessions - sessionsNeeded : 0;
+
   async function handleEnroll() {
     if (!token) {
       window.location.href = "/login";
       return;
     }
 
+    if (paymentType === "次卡" && !selectedCardId) {
+      alert("请选择要使用的次卡");
+      return;
+    }
+
     setEnrolling(true);
     try {
+      const body: Record<string, unknown> = { paymentType, guestCount };
+      if (paymentType === "次卡") body.cardId = selectedCardId;
+
       const res = await fetch(`/api/courses/${courseId}/enroll`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
       });
 
       if (res.ok) {
@@ -148,6 +205,14 @@ export default function CourseDetailPage() {
         const enrollRes = await fetch(`/api/courses/${courseId}/enrollments`);
         const enrollData = await enrollRes.json();
         if (enrollData.enrollments) setEnrollments(enrollData.enrollments);
+        // Refresh cards
+        if (paymentType === "次卡") {
+          const cardsRes = await fetch("/api/users/my-cards", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const cardsData = await cardsRes.json();
+          setMyCards(cardsData.cards || []);
+        }
       } else {
         const data = await res.json();
         alert(data.error || "报名失败");
@@ -371,10 +436,10 @@ export default function CourseDetailPage() {
 
         {/* Sidebar */}
         <div className="lg:col-span-1">
-          <div className="card p-6 sticky top-24">
+          <div className="card p-6 sticky top-24 space-y-5">
             {/* Progress */}
             {course.max_participants && (
-              <div className="mb-6">
+              <div>
                 <div className="flex items-center justify-between text-sm mb-2">
                   <span className="text-text-muted">报名人数</span>
                   <span className="font-medium text-text-primary">
@@ -402,6 +467,110 @@ export default function CourseDetailPage() {
               </div>
             )}
 
+            {/* Payment selection (only when not enrolled & not full & logged in) */}
+            {user && !isEnrolled && !isFull && course.status === "open" && !cardsLoading && (
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-text-primary flex items-center gap-1.5">
+                  <CreditCard size={15} className="text-primary" />
+                  支付方式
+                </p>
+
+                {/* Payment type toggle */}
+                <div className="flex gap-2">
+                  {myCards.length > 0 && (
+                    <button
+                      onClick={() => setPaymentType("次卡")}
+                      className={`flex-1 py-2 text-xs font-medium rounded-lg border transition-colors ${
+                        paymentType === "次卡"
+                          ? "bg-amber-50 border-amber-400 text-amber-800"
+                          : "border-border text-text-muted hover:border-amber-300"
+                      }`}
+                    >
+                      使用次卡
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setPaymentType("单次")}
+                    className={`flex-1 py-2 text-xs font-medium rounded-lg border transition-colors ${
+                      paymentType === "单次"
+                        ? "bg-amber-50 border-amber-400 text-amber-800"
+                        : "border-border text-text-muted hover:border-amber-300"
+                    }`}
+                  >
+                    单次购买 ¥58
+                  </button>
+                </div>
+
+                {/* Card selection */}
+                {paymentType === "次卡" && myCards.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-xs text-text-muted">选择次卡</label>
+                    <div className="relative">
+                      <select
+                        value={selectedCardId ?? ""}
+                        onChange={(e) => setSelectedCardId(parseInt(e.target.value, 10))}
+                        className="w-full appearance-none px-3 py-2 pr-8 text-xs border border-border rounded-lg bg-surface focus:outline-none focus:border-amber-400"
+                      >
+                        {myCards.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.card_type}（剩余 {c.remaining_sessions} 次）
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+                    </div>
+
+                    {/* Guest count */}
+                    <div>
+                      <label className="text-xs text-text-muted">带人数量</label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <button
+                          onClick={() => setGuestCount(Math.max(0, guestCount - 1))}
+                          className="w-7 h-7 flex items-center justify-center border border-border rounded text-text-secondary hover:bg-amber-50 hover:border-amber-300 transition-colors text-sm font-bold"
+                        >
+                          −
+                        </button>
+                        <span className="w-6 text-center text-sm font-medium text-text-primary">
+                          {guestCount}
+                        </span>
+                        <button
+                          onClick={() => setGuestCount(Math.min(5, guestCount + 1))}
+                          className="w-7 h-7 flex items-center justify-center border border-border rounded text-text-secondary hover:bg-amber-50 hover:border-amber-300 transition-colors text-sm font-bold"
+                        >
+                          +
+                        </button>
+                        <span className="text-xs text-text-muted">人</span>
+                      </div>
+                    </div>
+
+                    {/* Deduction preview */}
+                    {selectedCard && (
+                      <div className={`text-xs rounded-lg px-3 py-2 ${
+                        sessionsAfter < 0
+                          ? "bg-red-50 text-red-600"
+                          : "bg-amber-50 text-amber-800"
+                      }`}>
+                        {sessionsAfter < 0 ? (
+                          <span>⚠️ 次卡余额不足（还差 {-sessionsAfter} 次）</span>
+                        ) : (
+                          <span>
+                            本次扣除 <strong>{sessionsNeeded}</strong> 次，扣除后剩余{" "}
+                            <strong>{sessionsAfter}</strong> 次
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {myCards.length === 0 && (
+                  <p className="text-xs text-text-muted bg-amber-50 rounded-lg px-3 py-2">
+                    您暂无有效次卡，将以单次 ¥58 报名
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Enroll button */}
             {isEnrolled ? (
               <button
@@ -422,7 +591,7 @@ export default function CourseDetailPage() {
             ) : (
               <button
                 onClick={handleEnroll}
-                disabled={enrolling}
+                disabled={enrolling || (paymentType === "次卡" && selectedCard !== null && sessionsAfter < 0)}
                 className="w-full flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-text-inverse bg-success hover:bg-success/90 rounded-lg disabled:opacity-50 transition-colors"
               >
                 {enrolling ? (
@@ -430,12 +599,16 @@ export default function CourseDetailPage() {
                 ) : (
                   <Users size={18} />
                 )}
-                {enrolling ? "报名中..." : "我要报名"}
+                {enrolling
+                  ? "报名中..."
+                  : paymentType === "单次"
+                    ? "单次报名（¥58）"
+                    : "次卡报名"}
               </button>
             )}
 
             {!user && !isEnrolled && !isFull && (
-              <p className="text-xs text-text-muted text-center mt-3">
+              <p className="text-xs text-text-muted text-center">
                 报名需要先{" "}
                 <Link
                   href="/login"

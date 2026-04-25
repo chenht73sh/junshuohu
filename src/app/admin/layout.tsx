@@ -17,6 +17,7 @@ import {
   X,
   Shield,
   Download,
+  CreditCard,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -29,6 +30,7 @@ const sidebarItems = [
   { label: "板块管理", href: "/admin/categories", icon: LayoutGrid },
   { label: "公告管理", href: "/admin/announcements", icon: Megaphone },
   { label: "课程管理", href: "/admin/courses", icon: BookOpen },
+  { label: "次卡管理", href: "/admin/member-cards", icon: CreditCard },
   { label: "活动管理", href: "/admin/activities", icon: Calendar },
   { label: "数据导出", href: "/admin/export", icon: Download },
   { label: "站点设置", href: "/admin/settings", icon: Settings },

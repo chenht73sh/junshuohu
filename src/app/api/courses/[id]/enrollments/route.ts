@@ -30,7 +30,7 @@ export async function GET(
     }
 
     const result = await db.execute({
-      sql: `SELECT e.id, e.created_at,
+      sql: `SELECT e.id, e.created_at, e.payment_type, e.guest_count,
         u.id as user_id, u.display_name, u.avatar_url
        FROM enrollments e
        JOIN users u ON e.user_id = u.id
