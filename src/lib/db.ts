@@ -360,6 +360,26 @@ async function migrateDatabase(): Promise<void> {
     await db.execute({ sql: "ALTER TABLE enrollments ADD COLUMN card_transaction_id INTEGER REFERENCES card_transactions(id)", args: [] });
   } catch { /* already exists */ }
 
+  // Enrollment enhancements: manual enrollment + check-in fields (idempotent via try/catch)
+  try {
+    await db.execute({ sql: "ALTER TABLE enrollments ADD COLUMN is_manual INTEGER NOT NULL DEFAULT 0", args: [] });
+  } catch { /* already exists */ }
+  try {
+    await db.execute({ sql: "ALTER TABLE enrollments ADD COLUMN guest_name TEXT", args: [] });
+  } catch { /* already exists */ }
+  try {
+    await db.execute({ sql: "ALTER TABLE enrollments ADD COLUMN guest_phone TEXT", args: [] });
+  } catch { /* already exists */ }
+  try {
+    await db.execute({ sql: "ALTER TABLE enrollments ADD COLUMN checked_in INTEGER NOT NULL DEFAULT 0", args: [] });
+  } catch { /* already exists */ }
+  try {
+    await db.execute({ sql: "ALTER TABLE enrollments ADD COLUMN checked_in_at TEXT", args: [] });
+  } catch { /* already exists */ }
+  try {
+    await db.execute({ sql: "ALTER TABLE enrollments ADD COLUMN check_in_method TEXT", args: [] });
+  } catch { /* already exists */ }
+
   // Create indexes (separate batch since they reference tables created above)
   await db.batch([
     { sql: "CREATE INDEX IF NOT EXISTS idx_posts_category ON posts(category_id)", args: [] },

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Plus, Trash2, Edit2, X, Lock, Download } from "lucide-react";
+import { Plus, Trash2, Edit2, X, Lock, Download, ClipboardList } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface CourseItem {
@@ -325,6 +325,13 @@ export default function AdminCoursesPage() {
                       </td>
                       <td className="px-5 py-3">
                         <div className="flex items-center justify-end gap-1">
+                          <a
+                            href={`/admin/courses/${c.id}/enrollments`}
+                            className="p-1.5 text-text-muted hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
+                            title="查看报名"
+                          >
+                            <ClipboardList size={15} />
+                          </a>
                           <button
                             onClick={() => openEdit(c)}
                             disabled={actionLoading === c.id}
@@ -390,6 +397,13 @@ export default function AdminCoursesPage() {
                 </div>
 
                 <div className="flex items-center gap-2 pt-3 border-t border-border-light">
+                  <a
+                    href={`/admin/courses/${c.id}/enrollments`}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-amber-700 border border-amber-200 hover:bg-amber-50 transition-colors"
+                  >
+                    <ClipboardList size={12} />
+                    查看报名
+                  </a>
                   <button
                     onClick={() => openEdit(c)}
                     disabled={actionLoading === c.id}
