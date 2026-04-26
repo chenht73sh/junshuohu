@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   CreditCard,
   Plus,
@@ -90,17 +91,34 @@ const DEFAULT_PRICES: Record<string, number> = {
 
 export default function MemberCardsPage() {
   const { token } = useAuth();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"overview" | "add" | "stats">("overview");
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
-          <CreditCard size={20} className="text-amber-700" />
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+            <CreditCard size={20} className="text-amber-700" />
+          </div>
+          <div>
+            <h1 className="font-serif text-2xl font-semibold text-text-primary">次卡管理</h1>
+            <p className="text-sm text-text-muted">会员次卡购买记录与消费流水</p>
+          </div>
         </div>
-        <div>
-          <h1 className="font-serif text-2xl font-semibold text-text-primary">次卡管理</h1>
-          <p className="text-sm text-text-muted">会员次卡购买记录与消费流水</p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => router.push("/admin/import")}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+          >
+            📥 批量导入
+          </button>
+          <button
+            onClick={() => { window.location.href = "/api/admin/export/summary"; }}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-amber-600 text-amber-700 rounded-lg hover:bg-amber-50 transition-colors"
+          >
+            📤 导出汇总
+          </button>
         </div>
       </div>
 
